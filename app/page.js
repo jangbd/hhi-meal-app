@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
-import AdBanner from './AdBanner'; // 💡 하단 배너 광고 컴포넌트
+import AdBanner from './AdBanner';
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -66,14 +66,29 @@ export default function Home() {
     return acc;
   }, {});
 
-  // 💡 데이터베이스에 맞게 새로운 카테고리 순서로 업데이트
-  const categoryOrder = ['한식', '분식', '간편식', '월드키친', '직화', '일반식', '기숙사식', '스낵픽', '힐링푸드'];
+  const categoryOrder = ['한식', '간편식', '분식', '월드키친', '직화', '일반식', '기숙사식', '스낵픽', '힐링푸드'];
 
   const sortCategories = (mealsArray) => {
     return [...mealsArray].sort((a, b) => {
       const posA = categoryOrder.indexOf(a.menu_category) === -1 ? 99 : categoryOrder.indexOf(a.menu_category);
       const posB = categoryOrder.indexOf(b.menu_category) === -1 ? 99 : categoryOrder.indexOf(b.menu_category);
       return posA - posB;
+    });
+  };
+
+  // 💡 대괄호 키워드([해장국], [직화] 등) 컬러 변경 및 크기 업그레이드 헬퍼 함수
+  const highlightMenuText = (text) => {
+    const regex = /(\[[^\]]+\])/g;
+    const parts = text.split(regex);
+    return parts.map((part, idx) => {
+      if (part.startsWith('[') && part.endsWith(']')) {
+        return (
+          <span key={idx} className="text-orange-600 text-[21px] font-black inline-block mx-0.5">
+            {part}
+          </span>
+        );
+      }
+      return part;
     });
   };
 
@@ -95,18 +110,10 @@ export default function Home() {
               <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold">✕</button>
             </div>
             <nav className="space-y-3">
-              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">
-                🍱 식단
-              </Link>
-              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                🚌 버스 시간표
-              </Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                💎 칭찬 포인트 매칭소
-              </Link>
-              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                ⚙️ 설정
-              </Link>
+              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">🍱 식단</Link>
+              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">🚌 버스 시간표</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">💎 칭찬 포인트 매칭소</Link>
+              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ 설정</Link>
             </nav>
           </div>
         </div>
@@ -115,13 +122,11 @@ export default function Home() {
       <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-6 pb-24">
         {Object.entries(groupedMeals).map(([date, types]) => (
           <div key={date} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
-            
             <div className="flex flex-col items-center mb-4">
               {date === todayStr && (
                 <span className="bg-indigo-900 text-white text-[12px] font-black px-4 py-1.5 rounded-full mb-2 shadow-md">오늘</span>
               )}
               <h2 className="text-[26px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
-              
               {date === targetDateStr && (
                 <div className="mt-2 text-[14px] font-bold text-indigo-700 bg-indigo-50 px-5 py-2 rounded-full">
                   지금은 {currentMealLabel} 시간
@@ -131,7 +136,6 @@ export default function Home() {
 
             {['조식', '중식', '석식', '야식'].map(type => types[type] && (
               <div key={type} className="mt-8 pt-8 border-t-[4px] border-slate-100 first:mt-3 first:pt-0 first:border-t-0">
-                
                 <div className="flex justify-center items-center gap-2 mb-6 bg-slate-50 py-3.5 rounded-2xl shadow-sm border border-slate-100">
                   <span className="text-2xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
                   <h3 className="font-black text-indigo-950 text-[22px]">{type}</h3>
@@ -139,11 +143,11 @@ export default function Home() {
                 
                 {sortCategories(types[type]).map(m => (
                   <div key={m.id} className="text-center mb-10 last:mb-2">
-                    {/* 💡 한식, 분식, 간편식 글자 크기를 대폭 키웠습니다 (text-[18px] -> text-[22px]) */}
-                    <p className="text-green-700 font-black text-[22px] mb-3 tracking-tighter">{m.menu_category}</p>
+                    {/* 💡 한식, 간편식, 분식 타이틀 크기 추가 확대 (text-[22px] -> text-[25px]) */}
+                    <p className="text-green-700 font-black text-[25px] mb-3 tracking-tighter">{m.menu_category}</p>
                     <div className="text-slate-800 space-y-2.5 text-[19px] font-bold leading-snug">
                       {m.menu_text.split('·').map((item, idx) => (
-                        <p key={idx} className="block">{item.trim()}</p>
+                        <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
                       ))}
                     </div>
                   </div>
@@ -154,7 +158,6 @@ export default function Home() {
         ))}
       </main>
 
-      {/* 하단 고정 배너 광고 영역 */}
       <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
         <AdBanner dataAdSlot="본인의_애드센스_슬롯번호" /> 
       </div>
