@@ -67,10 +67,16 @@ export default function Home() {
     return acc;
   }, {});
 
-  const categoryOrder = ['일반식', '간편식', '월드키친', '직화', '기숙사식', '스낵픽', '힐링푸드'];
+  {/* 💡 정렬 기준에 '해장국'을 한식 바로 다음 순위로 추가했습니다! */}
+  const categoryOrder = ['한식', '해장국', '간편식', '월드키친', '분식', '기숙사식', '스낵픽', '힐링푸드'];
 
   const sortCategories = (mealsArray) => {
-    return [...mealsArray].sort((a, b) => {
+    return [...mealsArray].map(m => {
+      {/* 💡 조식/중식/석식 전체에서 '일반식'은 '한식'으로, '직화'는 '분식'으로 실시간 변경합니다. */}
+      if (m.menu_category === '일반식') m.menu_category = '한식';
+      if (m.menu_category === '직화') m.menu_category = '분식';
+      return m;
+    }).sort((a, b) => {
       const posA = categoryOrder.indexOf(a.menu_category) === -1 ? 99 : categoryOrder.indexOf(a.menu_category);
       const posB = categoryOrder.indexOf(b.menu_category) === -1 ? 99 : categoryOrder.indexOf(b.menu_category);
       return posA - posB;
@@ -84,7 +90,6 @@ export default function Home() {
         <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 transition-colors border border-indigo-800">
           📍 {selectedRestaurant} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
         </button>
-        {/* 💡 요청하신 대로 HHI 식단 글자를 완전히 제거했습니다! */}
         <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl ml-auto">☰</button>
       </header>
 
