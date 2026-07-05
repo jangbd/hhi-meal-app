@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
+import AdBanner from './AdBanner'; // 💡 하단 배너 광고를 위한 컴포넌트 불러오기
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -67,12 +68,12 @@ export default function Home() {
     return acc;
   }, {});
 
-  {/* 💡 정렬 기준에 '해장국'을 한식 바로 다음 순위로 추가했습니다! */}
+  // 💡 정렬 기준에 '해장국'을 한식 바로 다음 순위로 배치했습니다.
   const categoryOrder = ['한식', '해장국', '간편식', '월드키친', '분식', '기숙사식', '스낵픽', '힐링푸드'];
 
   const sortCategories = (mealsArray) => {
     return [...mealsArray].map(m => {
-      {/* 💡 조식/중식/석식 전체에서 '일반식'은 '한식'으로, '직화'는 '분식'으로 실시간 변경합니다. */}
+      // 💡 일반식은 한식으로, 직화는 분식으로 실시간 카테고리 이름을 치환합니다.
       if (m.menu_category === '일반식') m.menu_category = '한식';
       if (m.menu_category === '직화') m.menu_category = '분식';
       return m;
@@ -84,7 +85,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
       {/* 상단 앱바 */}
       <header className="sticky top-0 z-30 bg-indigo-950 text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 transition-colors border border-indigo-800">
@@ -121,7 +122,7 @@ export default function Home() {
       )}
 
       {/* 메인 식단 콘텐츠 */}
-      <main className="max-w-md mx-auto p-4 space-y-6 pb-20">
+      <main className="max-w-md mx-auto p-4 space-y-6 pb-24 flex-1 w-full">
         {Object.entries(groupedMeals).map(([date, types]) => (
           <div key={date} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
             
@@ -161,6 +162,11 @@ export default function Home() {
           </div>
         ))}
       </main>
+
+      {/* 💡 하단 스마트폰 고정형 구글 애드센스 배너 광고 영역 */}
+      <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white border-t z-40 h-[60px] flex items-center justify-center shadow-lg">
+        <AdBanner dataAdSlot="하단_배너_애드센스_슬롯번호" />
+      </div>
     </div>
   );
 }
