@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
-import AdBanner from './AdBanner'; // 하단 배너 광고 컴포넌트 연동
+import AdBanner from './AdBanner'; // 하단 배너 광고 컴포넌트
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -22,7 +22,6 @@ export default function Home() {
     fetchMeals();
   }, []);
 
-  // 날짜 계산 헬퍼 함수
   const pad = (n) => n < 10 ? '0' + n : n;
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -31,7 +30,6 @@ export default function Home() {
   tmrw.setDate(tmrw.getDate() + 1);
   const tomorrowStr = `${tmrw.getFullYear()}-${pad(tmrw.getMonth() + 1)}-${pad(tmrw.getDate())}`;
 
-  // 현재 시간에 맞춰 지나간 메뉴는 숨기고 '지금' 메뉴를 계산하는 로직
   const getSortedMeals = () => {
     const hour = now.getHours();
     let targetDateStr = todayStr;
@@ -84,7 +82,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
-      {/* 상단 앱바 */}
       <header className="sticky top-0 z-30 bg-indigo-950 text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 transition-colors border border-indigo-800">
           📍 {selectedRestaurant} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
@@ -92,7 +89,6 @@ export default function Home() {
         <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl ml-auto">☰</button>
       </header>
 
-      {/* 햄버거 메뉴 */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
@@ -102,44 +98,26 @@ export default function Home() {
               <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold">✕</button>
             </div>
             <nav className="space-y-3">
-              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">
-                🍱 식단
-              </Link>
-              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                🚌 버스 시간표
-              </Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                💎 칭찬 포인트 매칭소
-              </Link>
-              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">
-                ⚙️ 설정
-              </Link>
+              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">🍱 식단</Link>
+              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">🚌 버스 시간표</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">💎 칭찬 포인트 매칭소</Link>
+              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ 설정</Link>
             </nav>
           </div>
         </div>
       )}
 
-      {/* 메인 식단 콘텐츠 */}
       <main className="max-w-md mx-auto p-4 space-y-6 pb-24 flex-1 w-full">
         {Object.entries(groupedMeals).map(([date, types]) => (
           <div key={date} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
-            
             <div className="flex flex-col items-center mb-4">
-              {date === todayStr && (
-                <span className="bg-indigo-900 text-white text-[12px] font-black px-4 py-1.5 rounded-full mb-2 shadow-md">오늘</span>
-              )}
+              {date === todayStr && <span className="bg-indigo-900 text-white text-[12px] font-black px-4 py-1.5 rounded-full mb-2 shadow-md">오늘</span>}
               <h2 className="text-[26px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
-              
-              {date === targetDateStr && (
-                <div className="mt-2 text-[14px] font-bold text-indigo-700 bg-indigo-50 px-5 py-2 rounded-full">
-                  지금은 {currentMealLabel} 시간
-                </div>
-              )}
+              {date === targetDateStr && <div className="mt-2 text-[14px] font-bold text-indigo-700 bg-indigo-50 px-5 py-2 rounded-full">지금은 {currentMealLabel} 시간</div>}
             </div>
 
             {['조식', '중식', '석식', '야식'].map(type => types[type] && (
               <div key={type} className="mt-8 pt-8 border-t-[4px] border-slate-100 first:mt-3 first:pt-0 first:border-t-0">
-                
                 <div className="flex justify-center items-center gap-2 mb-6 bg-slate-50 py-3.5 rounded-2xl shadow-sm border border-slate-100">
                   <span className="text-2xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
                   <h3 className="font-black text-indigo-950 text-[22px]">{type}</h3>
@@ -147,41 +125,57 @@ export default function Home() {
                 
                 {sortCategories(types[type]).map(m => {
                   let itemsArray = m.menu_text.split('·').map(item => item.trim()).filter(Boolean);
-                  
-                  // 💡 [강제 매칭 시스템 보강] 글자가 완전히 일치하지 않고 '일부 포함'만 되어도 무조건 강제 삽입되도록 .includes() 패턴으로 전면 수정
-                  const rawString = m.menu_text.replace(/\s+/g, ''); // 공백을 완전히 제거한 텍스트 비교용
+                  const rawString = m.menu_text.replace(/\s+/g, '');
 
-                  // 1. 조식 한식 해장국 누락 강제 교정
+                  // 1. 조식 강제 교정
                   if (type === '조식' && m.menu_category === '한식') {
                     if (rawString.includes('콩비지찌개') && !rawString.includes('올갱이해장국')) {
-                      itemsArray = ['콩비지찌개', '모둠장조림', '청경채나물/김구이(완)', '[해장국]', '올갱이해장국', '[ 1869 kcal ]'];
+                      itemsArray = ['콩비지찌개', '모둠장조림', '청경채나물/김구이(완)', '[해장국]', '올갱이해장국'];
                     }
                   }
                   
-                  // 2. 석식 한식 해장국 누락 강제 교정
+                  // 2. 석식 강제 교정
                   if (type === '석식' && m.menu_category === '한식') {
                     if (rawString.includes('채개장') && !rawString.includes('돈육김치미나리덮밥')) {
                       itemsArray = ['채개장', '해물까스&칠리소스', '가지나물', '[해장국]', '돈육김치미나리덮밥'];
                     }
                   }
 
-                  // 3. 중식 분식 '고깃집볶음밥' 앞에 [직화] 타이틀 강제 주입
-                  itemsArray = itemsArray.map(item => {
-                    if (type === '중식' && item.replace(/\s+/g, '').includes('고깃집볶음밥') && !item.includes('[직화]')) {
-                      return '[직화] 고깃집볶음밥';
+                  // 💡 3. [직화] 타이틀 완벽 분리 및 내일 이후 오류 복구 로직
+                  let newItemsArray = [];
+                  itemsArray.forEach(item => {
+                    let text = item;
+                    
+                    // 고깃집볶음밥에 직화 타이틀이 아예 빠진 경우 강제 삽입
+                    if (type === '중식' && text.replace(/\s+/g, '').includes('고깃집볶음밥') && !text.includes('직화')) {
+                      text = '[직화] ' + text;
                     }
-                    return item;
+                    
+                    // 텍스트 안에 '[직화]' 또는 깨진 형태인 '직화]'가 들어있으면 무조건 분리
+                    if (text.includes('[직화]') || text.includes('직화]')) {
+                      // 배열에 [직화]를 단독으로 먼저 밀어 넣음 (초록색 타이틀화)
+                      newItemsArray.push('[직화]');
+                      
+                      // 원래 텍스트에서 '직화', '[', ']' 기호를 모두 걷어내고 순수한 메뉴 이름만 추출
+                      let cleanText = text.replace(/\[?직화\]?/g, '').trim();
+                      
+                      // 추출된 순수 메뉴 이름을 다음 배열 자리에 밀어 넣음 (다음 칸으로 떨어짐)
+                      if (cleanText) newItemsArray.push(cleanText);
+                    } else {
+                      newItemsArray.push(text);
+                    }
                   });
+                  itemsArray = newItemsArray;
+
+                  // 4. 칼로리 제거
+                  itemsArray = itemsArray.filter(item => !item.toLowerCase().includes('kcal'));
 
                   return (
                     <div key={m.id} className="text-center mb-10 last:mb-2">
                       <p className="text-green-700 font-black text-[18px] mb-3 tracking-tighter">{m.menu_category}</p>
                       <div className="text-slate-800 space-y-2.5 text-[19px] font-bold leading-snug">
                         {itemsArray.map((item, idx) => (
-                          <p 
-                            key={idx} 
-                            className={item.startsWith('[') && item.endsWith(']') ? "text-green-700 text-[18px] mt-4 mb-1 font-black block" : "block"}
-                          >
+                          <p key={idx} className={item.startsWith('[') && item.endsWith(']') ? "text-green-700 text-[18px] mt-4 mb-1 font-black block" : "block"}>
                             {item}
                           </p>
                         ))}
@@ -195,7 +189,6 @@ export default function Home() {
         ))}
       </main>
 
-      {/* 하단 스마트폰 고정형 구글 애드센스 배너 광고 영역 */}
       <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white border-t z-40 h-[60px] flex items-center justify-center shadow-lg">
         <AdBanner dataAdSlot="하단_배너_애드센스_슬롯번호" />
       </div>
