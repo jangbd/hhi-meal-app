@@ -11,7 +11,9 @@ export default function RootLayout({ children }) {
       <head>
         {/* 고해상도 Pretendard 폰트 불러오기 */}
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-        
+        {/* 💡 구글 애드센스 소유권 확인 메타 태그 (본인 ID로 변경하세요!) */}
+        <meta name="google-adsense-account" content="ca-pub-1252871302557543"></meta>
+
         {/* 💡 추후 애드센스 승인을 받으면 여기에 스크립트를 넣으시면 됩니다 */}
         {/* <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossOrigin="anonymous"></script> */}
       </head>
