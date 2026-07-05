@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
 
-// 💡 초기 진입장벽 완화용 버퍼 (추후 1로 변경 가능)
 const FLEX_LIMIT = 2; 
 
 // ⏳ 24시간 실시간 카운트다운 컴포넌트
@@ -34,8 +33,9 @@ export default function MatchingHub() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAdPlaying, setIsAdPlaying] = useState(false);
 
+  // 💡 회사 정보 입력을 위해 초기 state 구조 개선
   const [regForm, setRegForm] = useState({ 
-    name: '', company: 'HD현대중공업', department: '', position: '', hasDuplicate: false, positionDetail: '' 
+    name: '', company: 'HD현대중공업', customCompany: '', department: '', position: '', hasDuplicate: false, positionDetail: '' 
   });
 
   const fetchMyProfile = async (userId) => {
@@ -75,10 +75,16 @@ export default function MatchingHub() {
     await actionCallback();
   };
 
-  // 💡 실제 회원가입 로직
+  // 💡 실제 회원가입 로직 (회사 구분 처리 반영)
   const handleSaveProfile = async () => {
-    if (!regForm.name || !regForm.company || !regForm.department || !regForm.position) return alert('모든 정보를 정확하게 입력해 주세요!');
-    if (regForm.hasDuplicate && !regForm.positionDetail.trim()) return alert('상세 위치 정보를 입력해 주세요!');
+    const finalCompany = regForm.company === '기타' ? regForm.customCompany.trim() : regForm.company;
+    
+    if (!regForm.name || !finalCompany || !regForm.department || !regForm.position) {
+      return alert('모든 정보를 정확하게 입력해 주세요!');
+    }
+    if (regForm.hasDuplicate && !regForm.positionDetail.trim()) {
+      return alert('상세 위치 정보를 입력해 주세요!');
+    }
     
     setIsSyncing(true);
     const newUserId = crypto.randomUUID();
@@ -86,7 +92,7 @@ export default function MatchingHub() {
     const newProfile = {
       id: newUserId,
       name: regForm.name.trim(),
-      company: regForm.company.trim(),
+      company: finalCompany,
       department: regForm.department.replace(/\s+/g, ''), 
       position: regForm.position.trim(),
       has_duplicate: regForm.hasDuplicate,
@@ -106,13 +112,14 @@ export default function MatchingHub() {
     setIsSyncing(false);
   };
 
+  // 💡 매칭 시스템 고도화: 회사와 부서가 동시에 같은 경우만 사내 차단 필터링 적용!
   const _findMatch = async () => {
     setIsSyncing(true);
     const { data: pool } = await supabase.from('profiles').select('*').neq('id', myProfile.id);
     
     if (pool) {
       const available = pool.filter(u => {
-        const isSameDept = u.department === myProfile.department;
+        const isSameDept = u.company === myProfile.company && u.department === myProfile.department;
         const isAlreadySent = myProfile.sent_history.includes(u.id);
         const canTargetReceive = ((u.sent_count || 0) + FLEX_LIMIT - (u.received_count || 0)) > 0; 
         const isTargetBanned = (u.warning_count || 0) >= 2; 
@@ -302,7 +309,7 @@ export default function MatchingHub() {
         {!myProfile ? (
           <div className="space-y-5 my-auto animate-in fade-in duration-300 py-4">
             
-            {/* 💡 신규 추가된 서비스 안내 (온보딩 영역) */}
+            {/* 온보딩 가이드 */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="text-center mb-2">
                 <span className="text-4xl">✨</span>
@@ -323,7 +330,7 @@ export default function MatchingHub() {
                   <span className="text-xl mt-0.5">🤝</span>
                   <div>
                     <p className="text-[13.5px] font-black text-blue-900 mb-0.5">공정한 랜덤 매칭</p>
-                    <p className="text-[11.5px] text-slate-600 font-bold leading-relaxed break-keep">부서 몰아주기 방지를 위해 같은 부서 사람이나, 이번 달에 이미 포인트를 보낸 동료와는 매칭되지 않습니다.</p>
+                    <p className="text-[11.5px] text-slate-600 font-bold leading-relaxed break-keep">동일 계열사 내 동일 부서 사내 몰아주기 방지를 위해 같은 소속의 동료와는 매칭되지 않습니다.</p>
                   </div>
                 </div>
 
@@ -344,6 +351,32 @@ export default function MatchingHub() {
             </div>
             
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              {/* 💡 [신규 추가] 회사 선택 드롭다운 UI */}
+              <div className="space-y-1">
+                <label className="text-[12px] text-slate-400 font-black ml-1">회사 소속 선택</label>
+                <select 
+                  value={regForm.company} 
+                  onChange={(e) => setRegForm({...regForm, company: e.target.value})} 
+                  className="w-full p-3.5 bg-slate-50 rounded-xl border border-slate-200 font-bold outline-none focus:border-indigo-500 transition-colors cursor-pointer text-[15px]"
+                >
+                  <option value="HD현대중공업">HD현대중공업</option>
+                  <option value="HD현대일렉트릭">HD현대일렉트릭</option>
+                  <option value="HD현대미포">HD현대미포</option>
+                  <option value="HD현대삼호">HD현대삼호</option>
+                  <option value="기타">기타 (직접 입력)</option>
+                </select>
+              </div>
+
+              {/* 💡 '기타' 선택 시 커스텀 회사 입력창 활성화 */}
+              {regForm.company === '기타' && (
+                <input 
+                  placeholder="회사명을 직접 입력해 주세요" 
+                  value={regForm.customCompany} 
+                  onChange={(e) => setRegForm({...regForm, customCompany: e.target.value})} 
+                  className="w-full p-3.5 bg-slate-50 rounded-xl border border-indigo-200 font-bold outline-none focus:border-indigo-500 animate-in fade-in duration-200 text-[15px]"
+                />
+              )}
+
               <input placeholder="이름 (예: 홍길동)" value={regForm.name} onChange={(e)=>setRegForm({...regForm, name: e.target.value})} className="w-full p-3.5 bg-slate-50 rounded-xl border border-slate-200 font-bold outline-none focus:border-indigo-500 transition-colors" />
               <input placeholder="부서 (예: 의장시스템생산부)" value={regForm.department} onChange={(e)=>setRegForm({...regForm, department: e.target.value})} className="w-full p-3.5 bg-slate-50 rounded-xl border border-slate-200 font-bold outline-none focus:border-indigo-500 transition-colors" />
               <input placeholder="직급 (예: 기원)" value={regForm.position} onChange={(e)=>setRegForm({...regForm, position: e.target.value})} className="w-full p-3.5 bg-slate-50 rounded-xl border border-slate-200 font-bold outline-none focus:border-indigo-500 transition-colors" />
@@ -367,10 +400,11 @@ export default function MatchingHub() {
         ) : (
           <div className="flex-1 flex flex-col animate-in fade-in duration-300">
             
-            {/* 📊 내 스코어 보드 */}
+            {/* 📊 내 스코어 보드 (회사명 포함하도록 고도화) */}
             <div className="bg-white rounded-3xl p-4 mb-4 border border-slate-200 shadow-sm space-y-3">
               <div className="flex justify-between items-center px-1">
-                <p className="text-[13px] font-bold text-slate-600">👤 <span className="text-[#1a1a3c] font-black">{myProfile.name}</span> 님 ({myProfile.department})</p>
+                {/* 💡 상단 정보에 계열사(company)도 함께 표시 */}
+                <p className="text-[13px] font-bold text-slate-600">👤 <span className="text-[#1a1a3c] font-black">{myProfile.name}</span> 님 ({myProfile.company} / {myProfile.department})</p>
                 <button onClick={handleLogout} className="text-[11px] text-slate-400 font-bold underline p-1">로그아웃</button>
               </div>
               <div className="h-px bg-slate-100"></div>
@@ -415,7 +449,6 @@ export default function MatchingHub() {
                       className="w-full py-6 rounded-2xl font-black text-[18px] shadow-xl transition-all bg-[#1a1a3c] text-white hover:bg-indigo-900 active:scale-95 flex flex-col items-center gap-1"
                     >
                       <span>새로운 매칭 상대 찾기 🔍</span>
-                      <span className="text-[11px] font-normal text-indigo-300 bg-black/20 px-2 py-0.5 rounded-full">클릭 시 스폰서 광고 로딩</span>
                     </button>
                     {receivableAllowance <= 0 && (
                       <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
@@ -430,6 +463,7 @@ export default function MatchingHub() {
                     <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-6 shadow-md">
                       <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-[12px] font-black rounded-full mb-3">매칭 성공! 🎉</div>
                       <div className="bg-white p-5 rounded-2xl mt-4 border border-indigo-100 shadow-sm">
+                        <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.company}</p>
                         <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.department}</p>
                         <p className="text-[24px] font-black text-[#1a1a3c] mt-1">{myProfile.target_info.name} <span className="text-[16px] text-indigo-600">{myProfile.target_info.position}</span></p>
                       </div>
@@ -437,7 +471,6 @@ export default function MatchingHub() {
                     <div className="flex gap-2">
                       <button onClick={() => runWithAd(_handleSendPoint)} disabled={isSyncing || isAdPlaying} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[16px] shadow-lg flex flex-col items-center hover:bg-blue-700">
                         <span>✅ 발송 완료</span>
-                        <span className="text-[10px] font-normal opacity-80 mt-0.5">(광고 시청 후 적용)</span>
                       </button>
                       <button onClick={async () => { await supabase.from('profiles').update({ match_status: 'idle', target_info: null }).eq('id', myProfile.id); fetchMyProfile(myProfile.id); }} className="w-1/3 py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold text-[15px] hover:bg-slate-50">취소</button>
                     </div>
@@ -458,7 +491,7 @@ export default function MatchingHub() {
                               <div className="mt-2 space-y-2">
                                 <p className="text-[11.5px] text-red-600 font-bold break-keep">🚨 상대방이 미수신을 신고했습니다! 진짜로 발송해 주세요.</p>
                                 <button onClick={() => runWithAd(() => _handleResendPoint(item))} disabled={isSyncing || isAdPlaying} className="w-full py-2.5 bg-red-600 text-white rounded-lg font-black text-[13px] shadow-sm hover:bg-red-700 transition-colors">
-                                  📤 네, 다시 보냈습니다 (광고)
+                                  📤 네, 다시 보냈습니다
                                 </button>
                               </div>
                             )}
@@ -506,7 +539,6 @@ export default function MatchingHub() {
                               className={`flex-1 py-3 text-white rounded-xl font-black text-[14px] shadow-sm transition-all flex flex-col items-center justify-center ${item.status === 're_requested' ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                             >
                               <span>✅ 진짜 받았음</span>
-                              <span className="text-[9px] font-normal opacity-80 mt-0.5">(광고 시청)</span>
                             </button>
                             
                             {item.status === 'waiting' && (
