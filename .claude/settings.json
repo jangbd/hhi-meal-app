@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls postcss.config*)",
+      "Bash(cat postcss.config.*)",
+      "Bash(npx next *)",
+      "Bash(ls .vscode)",
+      "Bash(cat .vscode/settings.json)",
+      "Bash(cat .vscode/extensions.json)"
+    ]
+  }
+}

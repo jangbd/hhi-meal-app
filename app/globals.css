@@ -1,19 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* 1. 기본 설정 */
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
   }
 }
 
-/* 2. 스크롤바 숨김 기능 (유지) */
 .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
