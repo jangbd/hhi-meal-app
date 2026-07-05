@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
-import AdBanner from './AdBanner'; // 하단 배너 광고 컴포넌트
+import AdBanner from './AdBanner'; 
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -68,10 +68,20 @@ export default function Home() {
 
   const categoryOrder = ['한식', '간편식', '월드키친', '분식', '기숙사식', '스낵픽', '힐링푸드'];
 
+  // 💡 직화 증발 오류 수정 구역
   const sortCategories = (mealsArray) => {
-    return [...mealsArray].map(m => {
+    return [...mealsArray].map(meal => {
+      let m = { ...meal }; // 안전하게 복사해서 조작
+      
       if (m.menu_category === '일반식') m.menu_category = '한식';
-      if (m.menu_category === '직화') m.menu_category = '분식';
+      
+      // 기존에 카테고리가 직화였던 메뉴들을 분식으로 편입시키되, 텍스트에 [직화] 명찰을 달아 생존시킵니다.
+      if (m.menu_category && (m.menu_category.trim() === '직화' || m.menu_category.trim() === '[직화]')) {
+        m.menu_category = '분식';
+        if (!m.menu_text.includes('직화')) {
+          m.menu_text = '[직화] · ' + m.menu_text;
+        }
+      }
       return m;
     }).sort((a, b) => {
       const posA = categoryOrder.indexOf(a.menu_category) === -1 ? 99 : categoryOrder.indexOf(a.menu_category);
@@ -127,39 +137,38 @@ export default function Home() {
                   let itemsArray = m.menu_text.split('·').map(item => item.trim()).filter(Boolean);
                   const rawString = m.menu_text.replace(/\s+/g, '');
 
-                  // 1. 조식 강제 교정
+                  // 1. 조식 강제 교정 (해장국 분리)
                   if (type === '조식' && m.menu_category === '한식') {
                     if (rawString.includes('콩비지찌개') && !rawString.includes('올갱이해장국')) {
                       itemsArray = ['콩비지찌개', '모둠장조림', '청경채나물/김구이(완)', '[해장국]', '올갱이해장국'];
                     }
                   }
                   
-                  // 2. 석식 강제 교정
+                  // 2. 석식 강제 교정 (해장국 분리)
                   if (type === '석식' && m.menu_category === '한식') {
                     if (rawString.includes('채개장') && !rawString.includes('돈육김치미나리덮밥')) {
                       itemsArray = ['채개장', '해물까스&칠리소스', '가지나물', '[해장국]', '돈육김치미나리덮밥'];
                     }
                   }
 
-                  // 💡 3. [직화] 타이틀 완벽 분리 및 내일 이후 오류 복구 로직
+                  // 💡 3. [직화] 타이틀 초록색 태그 변환 및 줄바꿈(분리) 로직
                   let newItemsArray = [];
                   itemsArray.forEach(item => {
                     let text = item;
                     
-                    // 고깃집볶음밥에 직화 타이틀이 아예 빠진 경우 강제 삽입
+                    // 고깃집볶음밥 직화 누락 100% 방어
                     if (type === '중식' && text.replace(/\s+/g, '').includes('고깃집볶음밥') && !text.includes('직화')) {
                       text = '[직화] ' + text;
                     }
                     
-                    // 텍스트 안에 '[직화]' 또는 깨진 형태인 '직화]'가 들어있으면 무조건 분리
-                    if (text.includes('[직화]') || text.includes('직화]')) {
-                      // 배열에 [직화]를 단독으로 먼저 밀어 넣음 (초록색 타이틀화)
-                      newItemsArray.push('[직화]');
+                    // 정규식: 문장 맨 앞부분에 [직화], 직화], 직화 가 있는 경우에만 작동
+                    const jikhwaMatch = text.match(/^\[?직화\]?\s*/);
+                    
+                    if (jikhwaMatch) {
+                      newItemsArray.push('[직화]'); // 초록색 [직화] 타이틀을 먼저 독립적으로 뽑아냅니다.
                       
-                      // 원래 텍스트에서 '직화', '[', ']' 기호를 모두 걷어내고 순수한 메뉴 이름만 추출
-                      let cleanText = text.replace(/\[?직화\]?/g, '').trim();
-                      
-                      // 추출된 순수 메뉴 이름을 다음 배열 자리에 밀어 넣음 (다음 칸으로 떨어짐)
+                      // 타이틀을 뽑아낸 나머지 순수 메뉴 이름만 남겨서 바로 다음 줄(다음 칸)로 떨어뜨립니다.
+                      let cleanText = text.replace(/^\[?직화\]?\s*/, '').trim();
                       if (cleanText) newItemsArray.push(cleanText);
                     } else {
                       newItemsArray.push(text);
@@ -167,7 +176,7 @@ export default function Home() {
                   });
                   itemsArray = newItemsArray;
 
-                  // 4. 칼로리 제거
+                  // 4. 칼로리 영구 제거
                   itemsArray = itemsArray.filter(item => !item.toLowerCase().includes('kcal'));
 
                   return (
