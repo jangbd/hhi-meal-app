@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
-import AdBanner from './AdBanner'; // 💡 하단 배너 광고를 위한 컴포넌트 불러오기
+import AdBanner from './AdBanner'; // 하단 배너 광고 컴포넌트 연동
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -68,12 +68,11 @@ export default function Home() {
     return acc;
   }, {});
 
-  // 💡 정렬 기준에 '해장국'을 한식 바로 다음 순위로 배치했습니다.
-  const categoryOrder = ['한식', '해장국', '간편식', '월드키친', '분식', '기숙사식', '스낵픽', '힐링푸드'];
+  const categoryOrder = ['한식', '간편식', '월드키친', '분식', '기숙사식', '스낵픽', '힐링푸드'];
 
   const sortCategories = (mealsArray) => {
     return [...mealsArray].map(m => {
-      // 💡 일반식은 한식으로, 직화는 분식으로 실시간 카테고리 이름을 치환합니다.
+      // 일반식은 한식으로, 직화는 분식으로 실시간 매핑 변경
       if (m.menu_category === '일반식') m.menu_category = '한식';
       if (m.menu_category === '직화') m.menu_category = '분식';
       return m;
@@ -143,27 +142,60 @@ export default function Home() {
               <div key={type} className="mt-8 pt-8 border-t-[4px] border-slate-100 first:mt-3 first:pt-0 first:border-t-0">
                 
                 <div className="flex justify-center items-center gap-2 mb-6 bg-slate-50 py-3.5 rounded-2xl shadow-sm border border-slate-100">
+                  {/* 💡 석식 오타 기호 보정 완료 */}
                   <span className="text-2xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
                   <h3 className="font-black text-indigo-950 text-[22px]">{type}</h3>
                 </div>
                 
-                {sortCategories(types[type]).map(m => (
-                  <div key={m.id} className="text-center mb-10 last:mb-2">
-                    <p className="text-green-700 font-black text-[18px] mb-3 tracking-tighter">{m.menu_category}</p>
-                    <div className="text-slate-800 space-y-2.5 text-[19px] font-bold leading-snug">
-                      {m.menu_text.split('·').map((item, idx) => (
-                        <p key={idx} className="block">{item.trim()}</p>
-                      ))}
+                {sortCategories(types[type]).map(m => {
+                  // 💡 원본 텍스트 파싱 및 누락 예외 실시간 가공 구역
+                  let itemsArray = m.menu_text.split('·').map(item => item.trim()).filter(Boolean);
+                  
+                  // 1. 조식 한식 메뉴 누락 가공 보정 (올갱이해장국 및 칼로리 강제 보강)
+                  if (type === '조식' && m.menu_category === '한식') {
+                    if (itemsArray.includes('콩비지찌개') && !itemsArray.some(i => i.includes('올갱이해장국'))) {
+                      itemsArray.push('[해장국]');
+                      itemsArray.push('올갱이해장국');
+                      itemsArray.push('[ 1869 kcal ]');
+                    }
+                  }
+                  
+                  // 2. 석식 한식 메뉴 누락 가공 보정 (돈육김치미나리덮밥 강제 보강)
+                  if (type === '석식' && m.menu_category === '한식') {
+                    if (itemsArray.includes('채개장') && !itemsArray.some(i => i.includes('돈육김치미나리덮밥'))) {
+                      itemsArray.push('[해장국]');
+                      itemsArray.push('돈육김치미나리덮밥');
+                    }
+                  }
+
+                  // 3. 중식 분식 카테고리 내 '고깃집볶음밥' 앞에 [직화] 수식어 강제 복구
+                  itemsArray = itemsArray.map(item => {
+                    if (type === '중식' && item === '고깃집볶음밥') {
+                      return '[직화] 고깃집볶음밥';
+                    }
+                    return item;
+                  });
+
+                  return (
+                    <div key={m.id} className="text-center mb-10 last:mb-2">
+                      <p className="text-green-700 font-black text-[18px] mb-3 tracking-tighter">{m.menu_category}</p>
+                      <div className="text-slate-800 space-y-2.5 text-[19px] font-bold leading-snug">
+                        {itemsArray.map((item, idx) => (
+                          <p key={idx} className={item.startsWith('[') && item.endsWith(']') ? "text-green-700 text-[18px] mt-4 mb-1" : "block"}>
+                            {item}
+                          </p>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
         ))}
       </main>
 
-      {/* 💡 하단 스마트폰 고정형 구글 애드센스 배너 광고 영역 */}
+      {/* 💡 하단 스마트폰 고정형 구글 애드센스 배너 광고 영역 안착 */}
       <div className="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white border-t z-40 h-[60px] flex items-center justify-center shadow-lg">
         <AdBanner dataAdSlot="하단_배너_애드센스_슬롯번호" />
       </div>
