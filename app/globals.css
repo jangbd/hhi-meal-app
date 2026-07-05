@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 1. 기본 설정 */
 @layer base {
@@ -7,21 +9,7 @@
   }
 }
 
-/* 2. 테마 설정 (v4 방식) */
-@theme {
-  --color-background: #ffffff;
-  --color-foreground: #171717;
-}
-
-/* 3. 다크 모드 처리 (앱 스타일에서는 보통 제외하지만, 유지하고 싶다면 아래 주석 해제) */
-/*
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-*/
+/* 2. 스크롤바 숨김 기능 (유지) */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
