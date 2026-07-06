@@ -26,9 +26,21 @@ export default function Settings() {
     window.location.href = '/';
   };
 
+  // 💡 수정된 부분: 에러 발생 시 원인을 알림창으로 띄워주는 로직 추가
   const sendFeedback = async () => {
     if(!feedback) return alert(isKo ? "내용을 입력해주세요." : "Please enter your feedback.");
-    await supabase.from('feedback').insert([{ message: feedback, user_id: localStorage.getItem('hhi_user_id') || 'guest' }]);
+    
+    const { error } = await supabase.from('feedback').insert([{ 
+      message: feedback, 
+      user_id: localStorage.getItem('hhi_user_id') || 'guest' 
+    }]);
+
+    if (error) {
+      console.error("Supabase Error:", error);
+      alert("🚨 저장 실패: " + error.message);
+      return; // 에러가 나면 여기서 멈춤
+    }
+
     alert(isKo ? "소중한 의견 감사합니다!" : "Thank you for your feedback!");
     setFeedback('');
   };
