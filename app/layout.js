@@ -1,13 +1,13 @@
 import './globals.css';
 import Script from 'next/script';
 
-// 💡 1. 순수 메타데이터 (Next.js 최신 규격)
+// 1. 순수 메타데이터 (Next.js 최신 규격)
 export const metadata = {
   title: 'HHI 식단 앱',
   description: '현대일렉트릭 임직원 맞춤 서비스',
 };
 
-// 💡 2. 뷰포트 설정 분리 (Vercel 빌드 경고 해결)
+// 2. 뷰포트 설정 분리 (Vercel 빌드 경고 해결)
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -44,6 +44,21 @@ export default function RootLayout({ children }) {
       </head>
       <body className="bg-slate-100 antialiased" style={{ fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif' }}>
         
+        {/* 💡 PWA 진짜 앱 설치를 위한 서비스 워커 등록 스크립트 */}
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                  console.log('ServiceWorker 등록 성공!');
+                }, function(err) {
+                  console.log('ServiceWorker 등록 실패: ', err);
+                });
+              });
+            }
+          `}
+        </Script>
+
         {/* 전체 컨테이너: h-[100dvh]로 화면 꽉 채우고 이중 스크롤 방지 */}
         <div className="max-w-md mx-auto h-[100dvh] flex flex-col bg-white shadow-2xl relative overflow-hidden">
           
