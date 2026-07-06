@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import AdBanner from '../AdBanner'; // 💡 실제 광고 배너 추가
-import { dict } from '../i18n'; // 💡 다국어 메뉴 지원
+import AdBanner from '../AdBanner'; 
+import { dict } from '../i18n'; 
 
 const FLEX_LIMIT = 2; 
 
@@ -35,14 +35,12 @@ export default function MatchingHub() {
   const [isChecking, setIsChecking] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAdPlaying, setIsAdPlaying] = useState(false);
-  const [deptList, setDeptList] = useState([]); // 💡 부서 자동완성을 위한 상태
+  const [deptList, setDeptList] = useState([]); 
 
-  // 💡 가입 폼 상태
   const [regForm, setRegForm] = useState({ 
     name: '', company: 'HD현대중공업', customCompany: '', department: '', position: '', hasDuplicate: false, positionDetail: '' 
   });
 
-  // 💡 정보 수정 폼 상태
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '', company: 'HD현대중공업', customCompany: '', department: '', position: '', hasDuplicate: false, positionDetail: ''
@@ -54,7 +52,6 @@ export default function MatchingHub() {
     if (savedUserId) fetchMyProfile(savedUserId);
     else setIsChecking(false);
 
-    // 💡 부서 자동완성 목록 가져오기
     supabase.from('profiles').select('department').then(({ data }) => {
       if (data) setDeptList([...new Set(data.map(d => d.department))].filter(Boolean));
     });
@@ -78,7 +75,6 @@ export default function MatchingHub() {
         success_send_streak: data.success_send_streak || 0,
       });
 
-      // 💡 수정 폼에 기존 정보 세팅
       setEditForm({
         name: data.name,
         company: ['HD현대중공업', 'HD현대일렉트릭', 'HD현대미포', 'HD현대삼호'].includes(data.company) ? data.company : '기타',
@@ -103,7 +99,6 @@ export default function MatchingHub() {
     await actionCallback();
   };
 
-  // 💡 신규 가입 저장
   const handleSaveProfile = async () => {
     const finalCompany = regForm.company === '기타' ? regForm.customCompany.trim() : regForm.company;
     
@@ -127,7 +122,7 @@ export default function MatchingHub() {
       position_detail: regForm.hasDuplicate ? regForm.positionDetail.trim() : '',
       sent_count: 0, received_count: 0, match_status: 'idle',
       warning_count: 0, success_send_streak: 0,
-      sent_history: [], active_sends: [], active_receives: []
+      sent_history: [], active_sends: [], active_receives: [ ]
     };
 
     const { error } = await supabase.from('profiles').insert([newProfile]);
@@ -140,7 +135,6 @@ export default function MatchingHub() {
     setIsSyncing(false);
   };
 
-  // 💡 정보 수정 저장 함수
   const handleUpdateProfile = async () => {
     const finalCompany = editForm.company === '기타' ? editForm.customCompany.trim() : editForm.company;
     if (!editForm.name || !finalCompany || !editForm.department || !editForm.position) {
@@ -170,7 +164,6 @@ export default function MatchingHub() {
     setIsSyncing(false);
   };
 
-  // ⬇️ 아래부터는 오리지널 매칭 로직 그대로 보존! ⬇️
   const _findMatch = async () => {
     setIsSyncing(true);
     const { data: pool } = await supabase.from('profiles').select('*').neq('id', myProfile.id);
@@ -307,13 +300,6 @@ export default function MatchingHub() {
 
   const handleRefreshStatus = () => { if (myProfile) fetchMyProfile(myProfile.id); };
 
-  const handleLogout = () => {
-    if(confirm('이 기기에서 로그아웃 하시겠습니까?\n(데이터는 서버에 안전하게 보관됩니다)')) {
-      localStorage.removeItem('hhi_user_id');
-      window.location.reload();
-    }
-  };
-
   if (isChecking) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">시스템 확인 중...</div>;
 
   return (
@@ -333,7 +319,7 @@ export default function MatchingHub() {
 
       <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
-        <h1 className="text-[15px] font-black tracking-tight">{t.menu_points || '칭찬 포인트 매칭소'}</h1>
+        <h1 className="text-[15px] font-black tracking-tight">{t.menu_points || 'HD핵심가치 포인트 매칭소'}</h1>
         <div className="flex items-center">
           {myProfile && !isEditing && (
             <button onClick={handleRefreshStatus} className="mr-2 text-[12px] bg-indigo-500/30 px-2 py-1 rounded-full font-bold hover:bg-indigo-500/50 transition-colors">
@@ -344,7 +330,7 @@ export default function MatchingHub() {
         </div>
       </header>
 
-      {/* 햄버거 메뉴 (다국어 및 스타일 업데이트) */}
+      {/* 햄버거 메뉴 */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
@@ -356,7 +342,7 @@ export default function MatchingHub() {
             <nav className="space-y-3">
               <Link href="/" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_meal || '🍱 식단'}</Link>
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_bus || '🚌 버스 시간표'}</Link>
-              <Link href="/points" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_points || '💎 칭찬 포인트 매칭소'}</Link>
+              <Link href="/points" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_settings || '⚙️ 설정'}</Link>
             </nav>
           </div>
@@ -371,8 +357,8 @@ export default function MatchingHub() {
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="text-center mb-2">
                 <span className="text-4xl">✨</span>
-                <h2 className="text-[18px] font-black text-[#1a1a3c] mt-2">칭찬 포인트 매칭소란?</h2>
-                <p className="text-[12px] text-slate-500 font-bold mt-1">동료와 따뜻한 마음을 나누는 사내 품앗이 플랫폼</p>
+                <h2 className="text-[18px] font-black text-[#1a1a3c] mt-2">HD핵심가치 포인트 매칭소란?</h2>
+                <p className="text-[12px] text-slate-500 font-bold mt-1">정직원이 전송가능한 HD핵심가치 포인트 매칭 플랫폼</p>
               </div>
               
               <div className="space-y-3 pt-2">
@@ -402,7 +388,7 @@ export default function MatchingHub() {
               </div>
             </div>
 
-            {/* 회원가입 폼 (UI 업데이트 적용) */}
+            {/* 회원가입 폼 */}
             <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 text-center shadow-sm">
               <p className="text-[14px] text-amber-900 font-black mb-1">🔒 이용 전 정보 등록 (최초 1회)</p>
               <p className="text-[11.5px] text-amber-700 font-bold leading-snug">안전한 매칭을 위해 본인의 정확한 정보를 입력해 주세요.</p>
@@ -462,19 +448,16 @@ export default function MatchingHub() {
         ) : (
           <div className="flex-1 flex flex-col animate-in fade-in duration-300">
             
-            {/* 💡 [신규 추가] 내 스코어 보드 및 개인정보 수정 UI */}
             <div className="bg-white rounded-3xl p-4 mb-4 border border-slate-200 shadow-sm space-y-3">
               <div className="flex justify-between items-center px-1">
                 <p className="text-[13px] font-bold text-slate-600">👤 <span className="text-[#1a1a3c] font-black">{myProfile.name}</span> 님 ({myProfile.company} / {myProfile.department})</p>
                 <div className="flex gap-2">
                   {!isEditing && <button onClick={() => setIsEditing(true)} className="text-[11px] text-indigo-600 font-bold underline p-1">정보수정</button>}
-                  <button onClick={handleLogout} className="text-[11px] text-slate-400 font-bold underline p-1">로그아웃</button>
                 </div>
               </div>
               <div className="h-px bg-slate-100"></div>
               
               {!isEditing ? (
-                // 스코어 보드 화면
                 <>
                   <div className="grid grid-cols-2 text-center text-[12px] font-bold divide-x divide-slate-100 pb-2">
                     <div>
@@ -497,7 +480,6 @@ export default function MatchingHub() {
                   </div>
                 </>
               ) : (
-                // 💡 [신규 추가] 정보 수정 화면
                 <div className="space-y-3 pt-2">
                   <div className="space-y-1">
                     <label className="text-[11px] text-slate-400 font-black ml-1">회사 소속</label>
@@ -692,7 +674,6 @@ export default function MatchingHub() {
         )}
       </main>
 
-      {/* 💡 구글 애드센스 실제 배너 적용 */}
       <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
         <AdBanner dataAdSlot="3671427905" /> 
       </div>

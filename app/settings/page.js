@@ -33,7 +33,6 @@ export default function Settings() {
     setFeedback('');
   };
 
-  // 💡 식당 이름 다국어 번역 함수
   const getResName = (res) => {
     if(res === '현장(현대그린푸드)') return t.res_1 || res;
     if(res === '숙소(현대그린푸드)') return t.res_2 || res;
@@ -57,14 +56,13 @@ export default function Settings() {
             <nav className="space-y-3">
               <Link href="/" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_meal}</Link>
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_bus}</Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_points}</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
             </nav>
           </div>
         </div>
       )}
 
       <main className="flex-1 p-6 space-y-8 pb-24">
-        {/* 01. 주 공급 식당 */}
         <div className="space-y-3">
           <h3 className="text-indigo-600 font-black text-sm">{t.set_res || '01. 주 공급 식당'}</h3>
           <div className="grid grid-cols-1 gap-2">
@@ -77,7 +75,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* 💡 02, 03번 삭제 후 04번 언어 설정을 02번으로 당겨왔습니다! */}
         <div className="space-y-3">
           <h3 className="text-indigo-600 font-black text-sm">{(t.set_lang || '04. 표시 언어 (Language)').replace('04.', '02.')}</h3>
           <div className="grid grid-cols-2 gap-2">
@@ -93,7 +90,6 @@ export default function Settings() {
           {t.set_save || '설정 저장하고 식단 보기'}
         </button>
 
-        {/* 건의사항 */}
         <div className="space-y-3 p-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
             <h3 className="text-indigo-600 font-black text-sm">{isKo ? "💡 건의사항 및 문제신고" : "💡 Feedback & Bug Report"}</h3>
             <textarea 

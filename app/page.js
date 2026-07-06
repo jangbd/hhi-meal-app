@@ -62,10 +62,8 @@ export default function Home() {
     return cat;
   };
 
-  // 💡 사용자가 선택한 언어에 맞는 식단 메뉴 컬럼을 동적으로 가져오는 함수
   const getMenuByLang = (meal) => {
     const fieldName = `menu_${lang}`;
-    // 만약 번역된 데이터가 아직 없거나 비어있다면, 기존 한글 원문(menu_text)을 보여주도록 안전장치 설정
     return meal[fieldName] || meal.menu_text;
   };
 
@@ -149,7 +147,7 @@ export default function Home() {
             <nav className="space-y-3">
               <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_meal}</Link>
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_bus}</Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_points}</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_settings}</Link>
             </nav>
           </div>
@@ -178,7 +176,6 @@ export default function Home() {
                     <p className="text-green-700 font-black text-[20px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
                     
                     <div className="text-slate-800 space-y-1 text-[16px] font-bold leading-snug">
-                      {/* 💡 기존 m.menu_text 대신 언어별 컬럼 데이터(getMenuByLang)를 쪼개서 렌더링하도록 변경 완료 */}
                       {(getMenuByLang(m) || '').split('·').map((item, idx) => (
                         <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
                       ))}

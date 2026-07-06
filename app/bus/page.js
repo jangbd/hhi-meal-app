@@ -1,17 +1,16 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import AdBanner from '../AdBanner'; // 💡 하단 광고 배너 추가
-import { dict } from '../i18n'; // 💡 전체 메뉴 번역 사전 불러오기
+import AdBanner from '../AdBanner'; 
+import { dict } from '../i18n'; 
 
-// 💡 버스 페이지 전용 다국어 사전 (i18n.js 수정 불필요)
 const busDict = {
   ko: { title: "버스 시간표", inhouse: "사내 버스", ocean: "해양 버스", commute: "통근 버스", map: "전체 노선도", rush: "출퇴근 운행", regular: "근무시간 운행" },
   en: { title: "Bus Schedule", inhouse: "In-house", ocean: "Ocean", commute: "Commuter", map: "Route Map", rush: "Rush Hour", regular: "Working Hours" },
   vi: { title: "Lịch xe buýt", inhouse: "Nội bộ", ocean: "Hải dương", commute: "Đi làm", map: "Bản đồ", rush: "Giờ cao điểm", regular: "Giờ hành chính" },
-  zh: { title: "班车时刻表", inhouse: "厂内班车", ocean: "海洋班车", commute: "通勤班车", map: "路线图", rush: "上下班", regular: "工作时间" },
+  zh: { title: "班车时刻表", inhouse: "厂내班车", ocean: "海洋班车", commute: "通勤班车", map: "路线图", rush: "上下班", regular: "工作时间" },
   uz: { title: "Avtobus jadvali", inhouse: "Ichki", ocean: "Okean", commute: "Qatnov", map: "Xarita", rush: "Tig'iz vaqt", regular: "Odatiy" },
-  si: { title: "බස් කාලසටහන", inhouse: "ඇතුළත", ocean: "සාගර", commute: "මගී", map: "සිතියම", rush: "කාර්යබහුල", regular: "සාමාන්‍ය" },
+  si: { title: "බස් කාලසටහන", inhouse: "ඇතුළත", ocean: "සාගර", commute: "මගී", map: "සිතියම", rush: "කාර්යබහුල", regular: "සාමාන්‍ย" },
   id: { title: "Jadwal Bus", inhouse: "Internal", ocean: "Laut", commute: "Komuter", map: "Peta Rute", rush: "Jam Sibuk", regular: "Reguler" },
   tl: { title: "Iskedyul ng Bus", inhouse: "Kumpanya", ocean: "Karagatan", commute: "Komyuter", map: "Mapa", rush: "Rush Hour", regular: "Regular" },
   ru: { title: "Расписание", inhouse: "Внутренний", ocean: "Морской", commute: "Служебный", map: "Карта", rush: "Часы пик", regular: "Обычный" },
@@ -23,8 +22,6 @@ export default function BusInfo() {
   const [mainTab, setMainTab] = useState('shuttle');
   const [subTab, setSubTab] = useState('commute');
   const [selectedImage, setSelectedImage] = useState(null);
-  
-  // 💡 다국어 상태 관리 추가
   const [lang, setLang] = useState('ko');
 
   useEffect(() => {
@@ -32,41 +29,38 @@ export default function BusInfo() {
     setLang(savedLang);
   }, []);
 
-  const t = dict[lang] || dict.ko; // 전체 공통 메뉴용
-  const bt = busDict[lang] || busDict.ko; // 버스 페이지 전용
+  const t = dict[lang] || dict.ko; 
+  const bt = busDict[lang] || busDict.ko; 
 
   const storageBaseUrl = "https://jboyyhqyrwscrpanyywq.supabase.co/storage/v1/object/public/bus-schedules";
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto relative flex flex-col">
       
-      {/* 상단 앱바 */}
       <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
         <h1 className="text-[15px] font-black tracking-tight">{bt.title}</h1>
         <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
       </header>
 
-      {/* 햄버거 메뉴 (다국어 완벽 적용) */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
           <div className="relative w-64 bg-white h-full shadow-2xl p-6 animate-in slide-in-from-right duration-300">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-black text-[#1a1a3c]">Menu</h2>
-              <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold">✕</button>
+              <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold p-2">✕</button>
             </div>
             <nav className="space-y-3">
               <Link href="/" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_meal}</Link>
               <Link href="/bus" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_bus}</Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_points}</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_settings}</Link>
             </nav>
           </div>
         </div>
       )}
 
-      {/* 메인 탭 (다국어 완벽 적용) */}
       <div className="sticky top-14 z-20 bg-white border-b border-slate-200 flex overflow-x-auto scrollbar-hide shadow-sm">
         <button
           onClick={() => setMainTab('shuttle')}
@@ -95,10 +89,6 @@ export default function BusInfo() {
       </div>
 
       <main className="flex-1 p-4 mt-2 pb-20">
-        
-        {/* =========================================
-            A. 사내 버스 화면
-            ========================================= */}
         {mainTab === 'shuttle' && (
           <div className="animate-in fade-in duration-300">
             <div className="mb-6">
@@ -151,9 +141,6 @@ export default function BusInfo() {
           </div>
         )}
 
-        {/* =========================================
-            B. 해양 버스 화면
-            ========================================= */}
         {mainTab === 'haeyang' && (
           <div className="animate-in fade-in duration-300">
             <div className="space-y-4 mt-2">
@@ -174,9 +161,6 @@ export default function BusInfo() {
           </div>
         )}
 
-        {/* =========================================
-            C. 통근 버스 화면
-            ========================================= */}
         {mainTab === 'commuter' && (
           <div className="animate-in fade-in duration-300">
             <div className="space-y-4 mt-2">
@@ -196,10 +180,8 @@ export default function BusInfo() {
             </div>
           </div>
         )}
-
       </main>
 
-      {/* 이미지 전체화면 확대 모달 */}
       {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-2 backdrop-blur-sm animate-in fade-in duration-200"
@@ -222,7 +204,6 @@ export default function BusInfo() {
         </div>
       )}
       
-      {/* 💡 하단 고정 배너 광고 추가 */}
       <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
         <AdBanner dataAdSlot="3671427905" /> 
       </div>
