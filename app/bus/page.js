@@ -1,29 +1,53 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdBanner from '../AdBanner'; // 💡 하단 광고 배너 추가
+import { dict } from '../i18n'; // 💡 전체 메뉴 번역 사전 불러오기
+
+// 💡 버스 페이지 전용 다국어 사전 (i18n.js 수정 불필요)
+const busDict = {
+  ko: { title: "버스 시간표", inhouse: "사내 버스", ocean: "해양 버스", commute: "통근 버스", map: "전체 노선도", rush: "출퇴근 운행", regular: "근무시간 운행" },
+  en: { title: "Bus Schedule", inhouse: "In-house", ocean: "Ocean", commute: "Commuter", map: "Route Map", rush: "Rush Hour", regular: "Working Hours" },
+  vi: { title: "Lịch xe buýt", inhouse: "Nội bộ", ocean: "Hải dương", commute: "Đi làm", map: "Bản đồ", rush: "Giờ cao điểm", regular: "Giờ hành chính" },
+  zh: { title: "班车时刻表", inhouse: "厂内班车", ocean: "海洋班车", commute: "通勤班车", map: "路线图", rush: "上下班", regular: "工作时间" },
+  uz: { title: "Avtobus jadvali", inhouse: "Ichki", ocean: "Okean", commute: "Qatnov", map: "Xarita", rush: "Tig'iz vaqt", regular: "Odatiy" },
+  si: { title: "බස් කාලසටහන", inhouse: "ඇතුළත", ocean: "සාගර", commute: "මගී", map: "සිතියම", rush: "කාර්යබහුල", regular: "සාමාන්‍ය" },
+  id: { title: "Jadwal Bus", inhouse: "Internal", ocean: "Laut", commute: "Komuter", map: "Peta Rute", rush: "Jam Sibuk", regular: "Reguler" },
+  tl: { title: "Iskedyul ng Bus", inhouse: "Kumpanya", ocean: "Karagatan", commute: "Komyuter", map: "Mapa", rush: "Rush Hour", regular: "Regular" },
+  ru: { title: "Расписание", inhouse: "Внутренний", ocean: "Морской", commute: "Служебный", map: "Карта", rush: "Часы пик", regular: "Обычный" },
+  th: { title: "ตารางรถบัส", inhouse: "ภายใน", ocean: "ทางทะเล", commute: "รับส่ง", map: "แผนที่", rush: "ชั่วโมงเร่งด่วน", regular: "เวลาปกติ" }
+};
 
 export default function BusInfo() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mainTab, setMainTab] = useState('shuttle');
   const [subTab, setSubTab] = useState('commute');
-  
-  // 💡 클릭한 이미지를 전체화면으로 띄우기 위한 상태
   const [selectedImage, setSelectedImage] = useState(null);
+  
+  // 💡 다국어 상태 관리 추가
+  const [lang, setLang] = useState('ko');
 
-  // 슈파베이스 스토리지 기본 주소
+  useEffect(() => {
+    const savedLang = localStorage.getItem('my_language') || 'ko';
+    setLang(savedLang);
+  }, []);
+
+  const t = dict[lang] || dict.ko; // 전체 공통 메뉴용
+  const bt = busDict[lang] || busDict.ko; // 버스 페이지 전용
+
   const storageBaseUrl = "https://jboyyhqyrwscrpanyywq.supabase.co/storage/v1/object/public/bus-schedules";
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto relative">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto relative flex flex-col">
       
       {/* 상단 앱바 */}
       <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
-        <h1 className="text-[15px] font-black tracking-tight">버스 시간표</h1>
+        <h1 className="text-[15px] font-black tracking-tight">{bt.title}</h1>
         <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
       </header>
 
-      {/* 햄버거 메뉴 */}
+      {/* 햄버거 메뉴 (다국어 완벽 적용) */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
@@ -33,16 +57,16 @@ export default function BusInfo() {
               <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold">✕</button>
             </div>
             <nav className="space-y-3">
-              <Link href="/" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">🍱 식단</Link>
-              <Link href="/bus" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">🚌 버스 시간표</Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">💎 칭찬 포인트 매칭소</Link>
-              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ 설정</Link>
+              <Link href="/" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_meal}</Link>
+              <Link href="/bus" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_bus}</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_points}</Link>
+              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_settings}</Link>
             </nav>
           </div>
         </div>
       )}
 
-      {/* 메인 탭 */}
+      {/* 메인 탭 (다국어 완벽 적용) */}
       <div className="sticky top-14 z-20 bg-white border-b border-slate-200 flex overflow-x-auto scrollbar-hide shadow-sm">
         <button
           onClick={() => setMainTab('shuttle')}
@@ -50,7 +74,7 @@ export default function BusInfo() {
             mainTab === 'shuttle' ? 'border-indigo-600 text-indigo-900 bg-indigo-50/30' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
-          <span className="text-lg">🏢</span> 사내 버스
+          <span className="text-lg">🏢</span> {bt.inhouse}
         </button>
         <button
           onClick={() => setMainTab('haeyang')}
@@ -58,7 +82,7 @@ export default function BusInfo() {
             mainTab === 'haeyang' ? 'border-indigo-600 text-indigo-900 bg-indigo-50/30' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
-          <span className="text-lg">🌊</span> 해양 버스
+          <span className="text-lg">🌊</span> {bt.ocean}
         </button>
         <button
           onClick={() => setMainTab('commuter')}
@@ -66,11 +90,11 @@ export default function BusInfo() {
             mainTab === 'commuter' ? 'border-indigo-600 text-indigo-900 bg-indigo-50/30' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
         >
-          <span className="text-lg">🏠</span> 통근 버스
+          <span className="text-lg">🏠</span> {bt.commute}
         </button>
       </div>
 
-      <main className="p-4 mt-2 pb-20">
+      <main className="flex-1 p-4 mt-2 pb-20">
         
         {/* =========================================
             A. 사내 버스 화면
@@ -78,14 +102,12 @@ export default function BusInfo() {
         {mainTab === 'shuttle' && (
           <div className="animate-in fade-in duration-300">
             <div className="mb-6">
-              {/* 💡 요청하신 "확대해서 보세요" 문구 삭제 */}
               <div className="flex items-center justify-between mb-2 px-1">
-                <h3 className="font-black text-indigo-950 text-[15px]">🗺️ 전체 노선도</h3>
+                <h3 className="font-black text-indigo-950 text-[15px]">🗺️ {bt.map}</h3>
               </div>
               <img 
                 src={`${storageBaseUrl}/shuttle_map.png`} 
                 alt="사내 버스 전체 노선도" 
-                // 💡 이미지 클릭 시 selectedImage에 주소 저장 (확대 기능)
                 onClick={() => setSelectedImage(`${storageBaseUrl}/shuttle_map.png`)}
                 className="w-full h-auto rounded-[1.5rem] bg-white border border-slate-200 shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
                 onError={(e) => { e.target.style.display = 'none'; }}
@@ -99,7 +121,7 @@ export default function BusInfo() {
                   subTab === 'commute' ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200/50' : 'text-slate-500'
                 }`}
               >
-                🌅 출퇴근 운행
+                🌅 {bt.rush}
               </button>
               <button 
                 onClick={() => setSubTab('work')}
@@ -107,7 +129,7 @@ export default function BusInfo() {
                   subTab === 'work' ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200/50' : 'text-slate-500'
                 }`}
               >
-                🔄 근무시간 운행
+                🔄 {bt.regular}
               </button>
             </div>
 
@@ -134,7 +156,6 @@ export default function BusInfo() {
             ========================================= */}
         {mainTab === 'haeyang' && (
           <div className="animate-in fade-in duration-300">
-            {/* 💡 요청하신 해양 버스 안내 문구 박스 전체 삭제 */}
             <div className="space-y-4 mt-2">
               {Array.from({ length: 10 }).map((_, index) => {
                 const imgUrl = `${storageBaseUrl}/haeyang/haeyang${index + 1}.png`;
@@ -158,7 +179,6 @@ export default function BusInfo() {
             ========================================= */}
         {mainTab === 'commuter' && (
           <div className="animate-in fade-in duration-300">
-            {/* 💡 요청하신 통근 버스 안내 문구 박스 전체 삭제 */}
             <div className="space-y-4 mt-2">
               {Array.from({ length: 20 }).map((_, index) => {
                 const imgUrl = `${storageBaseUrl}/commuter/commuter${index + 1}.png`;
@@ -179,32 +199,33 @@ export default function BusInfo() {
 
       </main>
 
-      {/* 💡 이미지 전체화면 확대 모달 (팝업) */}
+      {/* 이미지 전체화면 확대 모달 */}
       {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-2 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setSelectedImage(null)} // 여백 클릭 시 닫힘
+          onClick={() => setSelectedImage(null)} 
         >
-          {/* 닫기 버튼 */}
           <button 
             className="absolute top-4 right-4 text-white text-3xl font-black p-4 z-[101]"
             onClick={() => setSelectedImage(null)}
           >
             ✕
           </button>
-          
-          {/* 확대된 이미지 영역 (스크롤 가능) */}
           <div className="relative w-full h-full flex items-center justify-center overflow-auto">
             <img 
               src={selectedImage} 
               alt="확대된 시간표" 
               className="max-w-full max-h-full object-contain"
-              onClick={(e) => e.stopPropagation()} // 이미지를 클릭했을 때는 창이 안 닫히게 방지
+              onClick={(e) => e.stopPropagation()} 
             />
           </div>
         </div>
       )}
       
+      {/* 💡 하단 고정 배너 광고 추가 */}
+      <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
+        <AdBanner dataAdSlot="3671427905" /> 
+      </div>
     </div>
   );
 }

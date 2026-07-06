@@ -3,16 +3,21 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
 import AdBanner from './AdBanner';
+import { dict } from './i18n'; 
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState('현장(현대그린푸드)');
+  const [lang, setLang] = useState('ko');
 
   useEffect(() => {
     const savedRes = localStorage.getItem('my_restaurant') || '현장(현대그린푸드)';
     setSelectedRestaurant(savedRes);
+
+    const savedLang = localStorage.getItem('my_language') || 'ko';
+    setLang(savedLang);
 
     async function fetchMeals() {
       const { data } = await supabase.from('meals').select('*').order('meal_date', { ascending: true });
@@ -22,6 +27,8 @@ export default function Home() {
     fetchMeals();
   }, []);
 
+  const t = dict[lang] || dict.ko;
+
   const pad = (n) => n < 10 ? '0' + n : n;
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -30,16 +37,40 @@ export default function Home() {
   tmrw.setDate(tmrw.getDate() + 1);
   const tomorrowStr = `${tmrw.getFullYear()}-${pad(tmrw.getMonth() + 1)}-${pad(tmrw.getDate())}`;
 
+  const getResName = (res) => {
+    if(res === '현장(현대그린푸드)') return t.res_1 || res;
+    if(res === '숙소(현대그린푸드)') return t.res_2 || res;
+    if(res === '현장(CJ프레시웨이)') return t.res_3 || res;
+    if(res === '현장(사이트솔루션HOC)') return t.res_4 || res;
+    return res;
+  };
+
+  const getMealTranslation = (mealType) => {
+    if (mealType === '조식') return t.b;
+    if (mealType === '중식') return t.l;
+    if (mealType === '석식') return t.d;
+    if (mealType === '야식') return t.n;
+    return mealType;
+  };
+
+  const getCategoryTranslation = (cat) => {
+    if (cat === '한식') return t.cat_korean;
+    if (cat === '간편식') return t.cat_snack;
+    if (cat === '분식') return t.cat_bunsik;
+    if (cat === '월드키친') return t.cat_world;
+    if (cat === '직화') return t.cat_jikhwa;
+    return cat;
+  };
+
   const getSortedMeals = () => {
     const hour = now.getHours();
     let targetDateStr = todayStr;
     let allowedTypesToday = [];
-    let currentMealLabel = '';
 
-    if (hour < 8) { allowedTypesToday = ['조식', '중식', '석식', '야식']; currentMealLabel = '조식'; }
-    else if (hour < 13) { allowedTypesToday = ['중식', '석식', '야식']; currentMealLabel = '중식'; }
-    else if (hour < 20) { allowedTypesToday = ['석식', '야식']; currentMealLabel = '석식'; }
-    else { targetDateStr = tomorrowStr; allowedTypesToday = ['조식', '중식', '석식', '야식']; currentMealLabel = '조식'; }
+    if (hour < 8) { allowedTypesToday = ['조식', '중식', '석식', '야식']; }
+    else if (hour < 13) { allowedTypesToday = ['중식', '석식', '야식']; }
+    else if (hour < 20) { allowedTypesToday = ['석식', '야식']; }
+    else { targetDateStr = tomorrowStr; allowedTypesToday = ['조식', '중식', '석식', '야식']; }
 
     const filtered = meals.filter(m => {
       if (m.restaurant !== selectedRestaurant) return false;
@@ -54,10 +85,10 @@ export default function Home() {
       return order[a.meal_type] - order[b.meal_type];
     });
 
-    return { sorted, targetDateStr, currentMealLabel };
+    return { sorted, targetDateStr };
   };
 
-  const { sorted: sortedMeals, targetDateStr, currentMealLabel } = getSortedMeals();
+  const { sorted: sortedMeals, targetDateStr } = getSortedMeals();
   
   const groupedMeals = sortedMeals.reduce((acc, meal) => {
     if (!acc[meal.meal_date]) acc[meal.meal_date] = {};
@@ -76,14 +107,13 @@ export default function Home() {
     });
   };
 
-  // 💡 대괄호 키워드([해장국], [직화] 등) 컬러 변경 및 크기 업그레이드 헬퍼 함수
   const highlightMenuText = (text) => {
     const regex = /(\[[^\]]+\])/g;
     const parts = text.split(regex);
     return parts.map((part, idx) => {
       if (part.startsWith('[') && part.endsWith(']')) {
         return (
-          <span key={idx} className="text-orange-600 text-[21px] font-black inline-block mx-0.5">
+          <span key={idx} className="text-orange-600 text-[18px] font-black inline-block mx-0.5">
             {part}
           </span>
         );
@@ -95,8 +125,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
       <header className="sticky top-0 z-30 bg-indigo-950 text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 transition-colors border border-indigo-800">
-          📍 {selectedRestaurant} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
+        <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 border border-indigo-800">
+          📍 {getResName(selectedRestaurant)} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
         </button>
         <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl ml-auto">☰</button>
       </header>
@@ -104,48 +134,43 @@ export default function Home() {
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-          <div className="relative w-64 bg-white h-full shadow-2xl p-6 animate-in slide-in-from-right duration-300">
+          <div className="relative w-64 bg-white h-full shadow-2xl p-6">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-black text-indigo-950">Menu</h2>
               <button onClick={() => setIsMenuOpen(false)} className="text-slate-400 text-xl font-bold">✕</button>
             </div>
             <nav className="space-y-3">
-              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">🍱 식단</Link>
-              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">🚌 버스 시간표</Link>
-              <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">💎 칭찬 포인트 매칭소</Link>
-              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ 설정</Link>
+              <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_meal}</Link>
+              <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_bus}</Link>
+              <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_points}</Link>
+              <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_settings}</Link>
             </nav>
           </div>
         </div>
       )}
 
-      <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-6 pb-24">
+      <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-4 pb-24">
         {Object.entries(groupedMeals).map(([date, types]) => (
-          <div key={date} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-200">
-            <div className="flex flex-col items-center mb-4">
+          <div key={date} className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200">
+            <div className="flex flex-col items-center mb-3">
               {date === todayStr && (
-                <span className="bg-indigo-900 text-white text-[12px] font-black px-4 py-1.5 rounded-full mb-2 shadow-md">오늘</span>
+                <span className="bg-indigo-900 text-white text-[11px] font-black px-3 py-1 rounded-full mb-1.5 shadow-md">{t.today}</span>
               )}
-              <h2 className="text-[26px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
-              {date === targetDateStr && (
-                <div className="mt-2 text-[14px] font-bold text-indigo-700 bg-indigo-50 px-5 py-2 rounded-full">
-                  지금은 {currentMealLabel} 시간
-                </div>
-              )}
+              <h2 className="text-[22px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
             </div>
 
             {['조식', '중식', '석식', '야식'].map(type => types[type] && (
-              <div key={type} className="mt-8 pt-8 border-t-[4px] border-slate-100 first:mt-3 first:pt-0 first:border-t-0">
-                <div className="flex justify-center items-center gap-2 mb-6 bg-slate-50 py-3.5 rounded-2xl shadow-sm border border-slate-100">
-                  <span className="text-2xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
-                  <h3 className="font-black text-indigo-950 text-[22px]">{type}</h3>
+              <div key={type} className="mt-5 first:mt-1">
+                <div className="flex justify-center items-center gap-1.5 mb-4 bg-slate-50 py-2.5 rounded-xl border border-slate-100">
+                  <span className="text-xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
+                  <h3 className="font-black text-indigo-950 text-[19px]">{getMealTranslation(type)}</h3>
                 </div>
                 
                 {sortCategories(types[type]).map(m => (
-                  <div key={m.id} className="text-center mb-10 last:mb-2">
-                    {/* 💡 한식, 간편식, 분식 타이틀 크기 추가 확대 (text-[22px] -> text-[25px]) */}
-                    <p className="text-green-700 font-black text-[25px] mb-3 tracking-tighter">{m.menu_category}</p>
-                    <div className="text-slate-800 space-y-2.5 text-[19px] font-bold leading-snug">
+                  <div key={m.id} className="text-center mb-5 last:mb-1">
+                    <p className="text-green-700 font-black text-[20px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+                    
+                    <div className="text-slate-800 space-y-1 text-[16px] font-bold leading-snug">
                       {m.menu_text.split('·').map((item, idx) => (
                         <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
                       ))}
@@ -159,7 +184,7 @@ export default function Home() {
       </main>
 
       <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
-        <AdBanner dataAdSlot="본인의_애드센스_슬롯번호" /> 
+        <AdBanner dataAdSlot="3671427905" /> 
       </div>
     </div>
   );
