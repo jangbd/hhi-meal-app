@@ -16,6 +16,10 @@ export default function RootLayout({ children }) {
 
         {/* 💡 추후 애드센스 승인을 받으면 여기에 스크립트를 넣으시면 됩니다 */}
         {/* <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossOrigin="anonymous"></script> */}
+
+        {/* app/layout.js의 <head> 안에 추가 */}
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-본인아이디" crossOrigin="anonymous"></script>
+
       </head>
       <body className="bg-slate-100 antialiased" style={{ fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif' }}>
         
