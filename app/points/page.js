@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import AdBanner from '../AdBanner'; 
 import { dict } from '../i18n'; 
 
 const FLEX_LIMIT = 2; 
@@ -90,6 +89,8 @@ export default function MatchingHub() {
   };
 
   const receivableAllowance = myProfile ? ((myProfile.sent_count || 0) + FLEX_LIMIT - (myProfile.received_count || 0)) : 0;
+  
+  // 💡 경고 2회 이상이면 차단 상태
   const isBanned = myProfile && myProfile.warning_count >= 2; 
 
   const runWithAd = async (actionCallback) => {
@@ -173,7 +174,10 @@ export default function MatchingHub() {
         const isSameDept = u.company === myProfile.company && u.department === myProfile.department;
         const isAlreadySent = myProfile.sent_history.includes(u.id);
         const canTargetReceive = ((u.sent_count || 0) + FLEX_LIMIT - (u.received_count || 0)) > 0; 
+        
+        // 💡 상대방이 정지 상태면 제외
         const isTargetBanned = (u.warning_count || 0) >= 2; 
+        
         return !isSameDept && !isAlreadySent && canTargetReceive && !isTargetBanned;
       });
 
@@ -202,9 +206,9 @@ export default function MatchingHub() {
       sent_at: Date.now(), status: 'waiting'
     };
 
+    // 💡 여기서 sent_count 올리던 부분을 지웠습니다. (수신 확인 시 증가)
     await supabase.from('profiles').update({ 
       match_status: 'idle', target_info: null,
-      sent_count: myProfile.sent_count + 1,
       sent_history: [...myProfile.sent_history, myProfile.target_info.id],
       active_sends: [...myProfile.active_sends, newSendItem]
     }).eq('id', myProfile.id);
@@ -220,24 +224,35 @@ export default function MatchingHub() {
 
   const _handleConfirmReceive = async (item) => {
     setIsSyncing(true);
+    
+    // 내 상태 업데이트 (수신 횟수 1 증가 및 리스트 삭제)
     const newActiveReceives = myProfile.active_receives.filter(r => r.txId !== item.txId);
     await supabase.from('profiles').update({ active_receives: newActiveReceives, received_count: myProfile.received_count + 1 }).eq('id', myProfile.id);
 
-    const { data: senderData } = await supabase.from('profiles').select('active_sends, warning_count, success_send_streak').eq('id', item.sender_id).single();
+    // 상대방(발송자) 상태 업데이트
+    const { data: senderData } = await supabase.from('profiles').select('active_sends, warning_count, success_send_streak, sent_count').eq('id', item.sender_id).single();
+    
     if (senderData) {
       const newActiveSends = senderData.active_sends.filter(s => s.txId !== item.txId);
       let newWarningCount = senderData.warning_count || 0;
       let newStreak = (senderData.success_send_streak || 0) + 1;
+      
+      // 💡 여기서 상대방(보낸 사람)의 발송 횟수 증가!
+      let newSentCount = (senderData.sent_count || 0) + 1; 
 
-      if (newStreak >= 10 && newWarningCount > 0) {
-        newWarningCount -= 1;
+      // 💡 3회 성공 시 경고 1회 차감
+      if (newStreak >= 3 && newWarningCount > 0) {
+        newWarningCount -= 1; 
         newStreak = 0; 
-      } else if (newStreak >= 10 && newWarningCount === 0) {
+      } else if (newStreak >= 3) {
         newStreak = 0; 
       }
 
       await supabase.from('profiles').update({ 
-        active_sends: newActiveSends, warning_count: newWarningCount, success_send_streak: newStreak
+        active_sends: newActiveSends, 
+        warning_count: newWarningCount, 
+        success_send_streak: newStreak,
+        sent_count: newSentCount
       }).eq('id', item.sender_id);
     }
     
@@ -303,7 +318,8 @@ export default function MatchingHub() {
   if (isChecking) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">시스템 확인 중...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 max-w-md mx-auto relative flex flex-col font-sans text-slate-900 shadow-xl overflow-x-hidden">
+    // 💡 overflow-x-hidden 속성을 완전히 삭제하여 상단바 고정(sticky)이 풀리지 않도록 처리했습니다!
+    <div className="min-h-screen bg-slate-50 max-w-md mx-auto relative flex flex-col font-sans text-slate-900 shadow-xl">
       
       {/* 📺 전면 광고 오버레이 */}
       {isAdPlaying && (
@@ -317,6 +333,7 @@ export default function MatchingHub() {
         </div>
       )}
 
+      {/* 💡 헤더는 무조건 sticky top-0 으로 상단 고정 */}
       <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
         <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
         <h1 className="text-[15px] font-black tracking-tight">{t.menu_points || 'HD핵심가치 포인트 매칭소'}</h1>
@@ -349,7 +366,8 @@ export default function MatchingHub() {
         </div>
       )}
 
-      <main className="p-4 flex-1 flex flex-col pb-20">
+      {/* 메인 컨텐츠 영역 */}
+      <main className="flex-1 p-4 pb-20">
         {!myProfile ? (
           <div className="space-y-5 my-auto animate-in fade-in duration-300 py-4">
             
@@ -382,7 +400,7 @@ export default function MatchingHub() {
                   <span className="text-xl mt-0.5">🛡️</span>
                   <div>
                     <p className="text-[13.5px] font-black text-red-900 mb-0.5">안전 거래 (에스크로)</p>
-                    <p className="text-[11.5px] text-slate-600 font-bold leading-relaxed break-keep">상대방이 앱에서 '수신 확인'을 해야 완료됩니다. 허위 발송 2회 적발 시 계정이 정지됩니다. (10회 정상 발송 시 경고 차감)</p>
+                    <p className="text-[11.5px] text-slate-600 font-bold leading-relaxed break-keep">상대방이 앱에서 '수신 확인'을 해야 완료됩니다. 허위 발송 시 경고가 누적됩니다. (3회 성공 시 경고 차감)</p>
                   </div>
                 </div>
               </div>
@@ -448,6 +466,18 @@ export default function MatchingHub() {
         ) : (
           <div className="flex-1 flex flex-col animate-in fade-in duration-300">
             
+            {/* 💡 경고 상태일 때 띄우는 배너 */}
+            {isBanned && !isEditing && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-4 shadow-sm">
+                <h2 className="text-[14px] font-black mb-1">🚨 포인트 수신 기능 제한</h2>
+                <p className="text-[12px] font-bold break-keep opacity-90 leading-relaxed">
+                  누적 경고 2회 초과로 인해 <b>다른 동료가 나를 매칭 상대로 찾을 수 없도록 제한</b>되었습니다.<br/>
+                  (수신 여유분이 충분해도 받을 수 없습니다.)<br/><br/>
+                  💡 상대방이 수신확인을 3회 완료하면 경고가 차감되어 복구됩니다.
+                </p>
+              </div>
+            )}
+
             <div className="bg-white rounded-3xl p-4 mb-4 border border-slate-200 shadow-sm space-y-3">
               <div className="flex justify-between items-center px-1">
                 <p className="text-[13px] font-bold text-slate-600">👤 <span className="text-[#1a1a3c] font-black">{myProfile.name}</span> 님 ({myProfile.company} / {myProfile.department})</p>
@@ -471,9 +501,9 @@ export default function MatchingHub() {
                   </div>
 
                   <div className={`px-3 py-2 rounded-xl text-[11px] font-bold flex justify-between items-center ${myProfile.warning_count > 0 ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-500'}`}>
-                    <span>🚨 누적 경고: {myProfile.warning_count} / 2</span>
+                    <span>🚨 누적 경고: {myProfile.warning_count}회</span>
                     {myProfile.warning_count > 0 ? (
-                      <span className="text-blue-600">🌟 경고 차감까지: {10 - myProfile.success_send_streak}회 남음</span>
+                      <span className="text-blue-600">🌟 차감까지: 수신확인 {3 - myProfile.success_send_streak}회 남음</span>
                     ) : (
                       <span>현재 포인트 수신 가능: {Math.max(0, receivableAllowance)}회 남음</span>
                     )}
@@ -518,165 +548,149 @@ export default function MatchingHub() {
               )}
             </div>
 
-            {/* 🚨🚨 블랙리스트 차단 */}
-            {isBanned && !isEditing ? (
-              <div className="bg-red-600 text-white p-6 rounded-3xl text-center shadow-xl my-auto animate-in slide-in-from-bottom-5">
-                <span className="text-6xl block mb-4">🚫</span>
-                <h2 className="text-[20px] font-black mb-2">계정 이용이 정지되었습니다.</h2>
-                <p className="text-[13px] font-bold leading-relaxed opacity-90 break-keep">
-                  누적 경고 2회 이상(허위 발송 등)으로 인해<br/>이용이 영구 제한되었습니다.<br/><br/>관련 문의는 사내 관리자에게 접수해 주세요.
-                </p>
+            {/* 🔍 매칭 대기 중 */}
+            {!isEditing && myProfile.match_status === 'idle' && (
+              <div className="mb-6 space-y-4">
+                <button 
+                  onClick={() => runWithAd(_findMatch)} 
+                  disabled={isSyncing || isAdPlaying}
+                  className="w-full py-6 rounded-2xl font-black text-[18px] shadow-xl transition-all bg-[#1a1a3c] text-white hover:bg-indigo-900 active:scale-95 flex flex-col items-center gap-1"
+                >
+                  <span>새로운 매칭 상대 찾기 🔍</span>
+                </button>
+
+                {receivableAllowance <= 0 && !isBanned && (
+                  <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
+                    <p className="text-[12px] text-red-700 font-bold break-keep">⚠️ <strong>포인트 수신 보류 중:</strong> 포인트를 동료에게 먼저 발송해야 나도 받을 수 있는 자격이 회복됩니다!</p>
+                  </div>
+                )}
               </div>
-            ) : (!isEditing && (
-              <>
-                {/* 🔍 매칭 대기 중 */}
-                {myProfile.match_status === 'idle' && (
-                  <div className="mb-6 space-y-4">
-                    <button 
-                      onClick={() => runWithAd(_findMatch)} 
-                      disabled={isSyncing || isAdPlaying}
-                      className="w-full py-6 rounded-2xl font-black text-[18px] shadow-xl transition-all bg-[#1a1a3c] text-white hover:bg-indigo-900 active:scale-95 flex flex-col items-center gap-1"
-                    >
-                      <span>새로운 매칭 상대 찾기 🔍</span>
-                    </button>
-                    {receivableAllowance <= 0 && (
-                      <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-center">
-                        <p className="text-[12px] text-red-700 font-bold break-keep">⚠️ <strong>포인트 수신 보류 중:</strong> 포인트를 동료에게 먼저 발송해야 나도 받을 수 있는 자격이 회복됩니다!</p>
-                      </div>
+            )}
+
+            {/* 🎉 매칭 완료 화면 */}
+            {!isEditing && myProfile.match_status === 'matched' && myProfile.target_info && (
+              <div className="mb-6 space-y-4 animate-in zoom-in-95 duration-300">
+                <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-6 shadow-md">
+                  <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-[12px] font-black rounded-full mb-3">매칭 성공! 🎉</div>
+                  <div className="bg-white p-5 rounded-2xl mt-4 border border-indigo-100 shadow-sm">
+                    <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.company}</p>
+                    <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.department}</p>
+                    <p className="text-[24px] font-black text-[#1a1a3c] mt-1">
+                      {myProfile.target_info.name} <span className="text-[16px] text-indigo-600">{myProfile.target_info.position}</span>
+                    </p>
+                    {myProfile.target_info.has_duplicate && (
+                      <p className="text-[13px] text-red-600 font-bold mt-2">💡 확인 필수: {myProfile.target_info.position_detail}</p>
                     )}
                   </div>
-                )}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => runWithAd(_handleSendPoint)} disabled={isSyncing || isAdPlaying} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[16px] shadow-lg flex flex-col items-center hover:bg-blue-700">
+                    <span>✅ 발송 완료</span>
+                  </button>
+                  <button onClick={async () => { await supabase.from('profiles').update({ match_status: 'idle', target_info: null }).eq('id', myProfile.id); fetchMyProfile(myProfile.id); }} className="w-1/3 py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold text-[15px] hover:bg-slate-50">취소</button>
+                </div>
+              </div>
+            )}
 
-                {/* 🎉 매칭 완료 화면 */}
-                {myProfile.match_status === 'matched' && myProfile.target_info && (
-                  <div className="mb-6 space-y-4 animate-in zoom-in-95 duration-300">
-                    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-3xl p-6 shadow-md">
-                      <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-[12px] font-black rounded-full mb-3">매칭 성공! 🎉</div>
-                      <div className="bg-white p-5 rounded-2xl mt-4 border border-indigo-100 shadow-sm">
-                        <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.company}</p>
-                        <p className="text-[15px] text-slate-500 font-black">{myProfile.target_info.department}</p>
-                        <p className="text-[24px] font-black text-[#1a1a3c] mt-1">
-                          {myProfile.target_info.name} <span className="text-[16px] text-indigo-600">{myProfile.target_info.position}</span>
-                        </p>
-                        {/* 상대방이 동명이인이 있을 경우 상세 정보 표시 */}
-                        {myProfile.target_info.has_duplicate && (
-                          <p className="text-[13px] text-red-600 font-bold mt-2">💡 확인 필수: {myProfile.target_info.position_detail}</p>
+            {/* 📤 상대방 수신 대기 중 리스트 */}
+            {!isEditing && myProfile.active_sends.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-[14px] font-black text-slate-700 mb-3 ml-1">📤 상대방 수신 대기 중 ({myProfile.active_sends.length})</h3>
+                <div className="space-y-3">
+                  {myProfile.active_sends.map(item => (
+                    <div key={item.txId} className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${item.status === 're_requested' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`}>
+                      <div className="flex-1 pr-2">
+                        <p className="text-[12px] text-slate-500 font-bold">{item.target_dept}</p>
+                        <p className="text-[16px] font-black text-[#1a1a3c]">{item.target_name}</p>
+                        
+                        {item.status === 're_requested' && (
+                          <div className="mt-2 space-y-2">
+                            <p className="text-[11.5px] text-red-600 font-bold break-keep">🚨 상대방이 미수신을 신고했습니다! 진짜로 발송해 주세요.</p>
+                            <button onClick={() => runWithAd(() => _handleResendPoint(item))} disabled={isSyncing || isAdPlaying} className="w-full py-2.5 bg-red-600 text-white rounded-lg font-black text-[13px] shadow-sm hover:bg-red-700 transition-colors">
+                              📤 네, 다시 보냈습니다
+                            </button>
+                          </div>
+                        )}
+
+                        {item.status === 'resent' && (
+                          <p className="text-[11px] text-blue-600 font-bold mt-1">🔄 재발송 완료 (상대방 확인 대기중)</p>
                         )}
                       </div>
+                      
+                      <div className="text-right whitespace-nowrap self-start">
+                        <p className="text-[11px] text-slate-400 font-bold mb-1">자동 만료까지</p>
+                        <div className={`px-2 py-1 rounded-lg inline-block ${item.status === 're_requested' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                          <CountdownTimer sentAt={item.sent_at} />
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => runWithAd(_handleSendPoint)} disabled={isSyncing || isAdPlaying} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[16px] shadow-lg flex flex-col items-center hover:bg-blue-700">
-                        <span>✅ 발송 완료</span>
-                      </button>
-                      <button onClick={async () => { await supabase.from('profiles').update({ match_status: 'idle', target_info: null }).eq('id', myProfile.id); fetchMyProfile(myProfile.id); }} className="w-1/3 py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold text-[15px] hover:bg-slate-50">취소</button>
-                    </div>
-                  </div>
-                )}
+                  ))}
+                </div>
+              </div>
+            )}
 
-                {/* 📤 상대방 수신 대기 중 리스트 */}
-                {myProfile.active_sends.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-[14px] font-black text-slate-700 mb-3 ml-1">📤 상대방 수신 대기 중 ({myProfile.active_sends.length})</h3>
-                    <div className="space-y-3">
-                      {myProfile.active_sends.map(item => (
-                        <div key={item.txId} className={`p-4 rounded-2xl border shadow-sm flex items-center justify-between ${item.status === 're_requested' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`}>
-                          <div className="flex-1 pr-2">
-                            <p className="text-[12px] text-slate-500 font-bold">{item.target_dept}</p>
-                            <p className="text-[16px] font-black text-[#1a1a3c]">{item.target_name}</p>
-                            
-                            {item.status === 're_requested' && (
-                              <div className="mt-2 space-y-2">
-                                <p className="text-[11.5px] text-red-600 font-bold break-keep">🚨 상대방이 미수신을 신고했습니다! 진짜로 발송해 주세요.</p>
-                                <button onClick={() => runWithAd(() => _handleResendPoint(item))} disabled={isSyncing || isAdPlaying} className="w-full py-2.5 bg-red-600 text-white rounded-lg font-black text-[13px] shadow-sm hover:bg-red-700 transition-colors">
-                                  📤 네, 다시 보냈습니다
-                                </button>
-                              </div>
-                            )}
-
-                            {item.status === 'resent' && (
-                              <p className="text-[11px] text-blue-600 font-bold mt-1">🔄 재발송 완료 (상대방 확인 대기중)</p>
-                            )}
-                          </div>
-                          
-                          <div className="text-right whitespace-nowrap self-start">
-                            <p className="text-[11px] text-slate-400 font-bold mb-1">자동 만료까지</p>
-                            <div className={`px-2 py-1 rounded-lg inline-block ${item.status === 're_requested' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
-                              <CountdownTimer sentAt={item.sent_at} />
-                            </div>
+            {/* 🎁 도착한 포인트 리스트 */}
+            {!isEditing && myProfile.active_receives.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-[14px] font-black text-indigo-700 mb-3 ml-1">🎁 도착한 포인트 ({myProfile.active_receives.length})</h3>
+                <div className="space-y-3">
+                  {myProfile.active_receives.map(item => (
+                    <div key={item.txId} className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm">
+                      <div className="flex justify-between items-center mb-3">
+                        <div>
+                          <p className="text-[12px] text-indigo-600 font-bold">{item.sender_dept}</p>
+                          <p className="text-[18px] font-black text-[#1a1a3c]">{item.sender_name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[11px] text-slate-400 font-bold mb-1">수신 유효시간</p>
+                          <div className="bg-white border border-indigo-100 px-2 py-1 rounded-lg text-indigo-600">
+                            <CountdownTimer sentAt={item.sent_at} />
                           </div>
                         </div>
-                      ))}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => runWithAd(() => _handleConfirmReceive(item))} 
+                          disabled={isSyncing || isAdPlaying || item.status === 're_requested'} 
+                          className={`flex-1 py-3 text-white rounded-xl font-black text-[14px] shadow-sm transition-all flex flex-col items-center justify-center ${item.status === 're_requested' ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        >
+                          <span>✅ 진짜 받았음</span>
+                        </button>
+                        
+                        {item.status === 'waiting' && (
+                          <button onClick={() => runWithAd(() => _handleRequestAgain(item))} disabled={isSyncing || isAdPlaying} className="w-1/3 py-3 bg-white border border-slate-300 text-slate-600 rounded-xl font-bold text-[13px] flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                            <span>🔄 다시 요청</span>
+                          </button>
+                        )}
+
+                        {item.status === 're_requested' && (
+                          <button disabled className="w-1/3 py-3 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl font-bold text-[13px] cursor-not-allowed">
+                            ⏳ 대기중
+                          </button>
+                        )}
+
+                        {item.status === 'resent' && (
+                          <button onClick={() => runWithAd(() => _handleCancelTransaction(item))} disabled={isSyncing || isAdPlaying} className="w-1/3 py-3 bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-[13px] hover:bg-red-200 transition-colors">
+                            🚨 허위 신고
+                          </button>
+                        )}
+                      </div>
+
+                      {item.status === 're_requested' && (
+                        <p className="text-[11.5px] text-red-600 font-bold mt-3 text-center bg-red-50 py-1.5 rounded-lg border border-red-100">
+                          발송자에게 알림을 보냈습니다. 재발송을 기다려주세요.
+                        </p>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* 🎁 도착한 포인트 리스트 */}
-                {myProfile.active_receives.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-[14px] font-black text-indigo-700 mb-3 ml-1">🎁 도착한 포인트 ({myProfile.active_receives.length})</h3>
-                    <div className="space-y-3">
-                      {myProfile.active_receives.map(item => (
-                        <div key={item.txId} className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm">
-                          <div className="flex justify-between items-center mb-3">
-                            <div>
-                              <p className="text-[12px] text-indigo-600 font-bold">{item.sender_dept}</p>
-                              <p className="text-[18px] font-black text-[#1a1a3c]">{item.sender_name}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[11px] text-slate-400 font-bold mb-1">수신 유효시간</p>
-                              <div className="bg-white border border-indigo-100 px-2 py-1 rounded-lg text-indigo-600">
-                                <CountdownTimer sentAt={item.sent_at} />
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => runWithAd(() => _handleConfirmReceive(item))} 
-                              disabled={isSyncing || isAdPlaying || item.status === 're_requested'} 
-                              className={`flex-1 py-3 text-white rounded-xl font-black text-[14px] shadow-sm transition-all flex flex-col items-center justify-center ${item.status === 're_requested' ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                            >
-                              <span>✅ 진짜 받았음</span>
-                            </button>
-                            
-                            {item.status === 'waiting' && (
-                              <button onClick={() => runWithAd(() => _handleRequestAgain(item))} disabled={isSyncing || isAdPlaying} className="w-1/3 py-3 bg-white border border-slate-300 text-slate-600 rounded-xl font-bold text-[13px] flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
-                                <span>🔄 다시 요청</span>
-                              </button>
-                            )}
-
-                            {item.status === 're_requested' && (
-                              <button disabled className="w-1/3 py-3 bg-slate-100 border border-slate-200 text-slate-400 rounded-xl font-bold text-[13px] cursor-not-allowed">
-                                ⏳ 대기중
-                              </button>
-                            )}
-
-                            {item.status === 'resent' && (
-                              <button onClick={() => runWithAd(() => _handleCancelTransaction(item))} disabled={isSyncing || isAdPlaying} className="w-1/3 py-3 bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-[13px] hover:bg-red-200 transition-colors">
-                                🚨 허위 신고
-                              </button>
-                            )}
-                          </div>
-
-                          {item.status === 're_requested' && (
-                            <p className="text-[11.5px] text-red-600 font-bold mt-3 text-center bg-red-50 py-1.5 rounded-lg border border-red-100">
-                              발송자에게 알림을 보냈습니다. 재발송을 기다려주세요.
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ))}
+                  ))}
+                </div>
+              </div>
+            )}
+            
           </div>
         )}
       </main>
-
-      <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
-        <AdBanner dataAdSlot="3671427905" /> 
-      </div>
     </div>
   );
 }
