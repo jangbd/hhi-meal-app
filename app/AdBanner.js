@@ -6,6 +6,8 @@ export default function AdBanner({ dataAdSlot }) {
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
+      // 💡 "이미 광고가 채워져 있다"는 에러 메시지는 무시하고 종료
+      if (err.message && err.message.includes('already have ads')) return;
       console.error('AdSense Error:', err);
     }
   }, []);
@@ -17,9 +19,8 @@ export default function AdBanner({ dataAdSlot }) {
         className="adsbygoogle"
         /* 💡 반응형 속성을 빼고 모바일 표준 배너 사이즈(320x50)로 직접 강제 고정! */
         style={{ display: 'inline-block', width: '320px', height: '50px' }}
-        data-ad-client="ca-pub-0000000000000000" /* 💡 승인 후 본인의 클라이언트 ID로 변경 필수! */
+        data-ad-client="ca-pub-1252871302557543" 
         data-ad-slot={dataAdSlot}
-        data-ad-test="on" /* 테스트 모드 (개발 중 무효클릭 방지) */
       ></ins>
     </div>
   );

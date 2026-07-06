@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import AdBanner from '../AdBanner';
 import { dict } from '../i18n';
 import { supabase } from '../../lib/supabaseClient';
+// 💡 AdBanner import 제거 (더 이상 사용하지 않음)
 
 export default function Settings() {
   const [selectedRestaurant, setSelectedRestaurant] = useState('현장(현대그린푸드)');
@@ -103,10 +103,7 @@ export default function Settings() {
             </button>
         </div>
       </main>
-
-      <div className="w-full flex items-center justify-center bg-gray-50 border-t sticky bottom-0 z-40">
-        <AdBanner dataAdSlot="3671427905" /> 
-      </div>
+      {/* 💡 기존에 있던 하단 AdBanner 래퍼 div를 완전히 삭제했습니다. */}
     </div>
   );
 }

@@ -1,0 +1,17 @@
+{
+  "name": "HD현대 식단표",
+  "short_name": "HD식단표",
+  "description": "HD현대 임직원 맞춤 식단 및 서비스",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a3c",
+  "theme_color": "#1a1a3c",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
