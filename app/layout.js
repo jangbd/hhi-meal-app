@@ -9,6 +9,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
+        {/* 다른 태그들... */}
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
         
         {/* 구글 애드센스 승인용 메타 태그 */}
