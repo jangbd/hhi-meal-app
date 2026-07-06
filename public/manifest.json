@@ -1,19 +1,18 @@
 {
   "name": "HHI 식단 앱",
   "short_name": "HHI식단",
-  "description": "현대일렉트릭 임직원 맞춤 식단 및 서비스",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a1a3c",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/apple-touch-icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/apple-touch-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
