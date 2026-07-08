@@ -7,10 +7,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-  const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-  return v.toString(16);
-});
+// 고유 ID 생성기
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 export default function GameLobby() {
   const [activeTab, setActiveTab] = useState('arena'); 
@@ -237,7 +241,7 @@ export default function GameLobby() {
     await loadGameData(user);
   };
 
-  // 💡 [핵심 해결] 무기 상자 까기 시 DB 먼저 처리 후 불러오기
+  // 💡 [핵심 해결] 무기 상자 까기 시 즉시 화면 렌더링 후 DB 반영 및 동기화
   const handleOpenWeaponBox = async () => {
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
     if (inventory.length >= 10) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
@@ -256,9 +260,12 @@ export default function GameLobby() {
       
       const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
       
+      // 화면(가방)에 즉시 주입 (무기 증발 원천 차단)
+      setInventory(prev => [...prev, newWeaponData]); 
+      
       await supabase.from('weapons').insert([newWeaponData]); 
       
-      // 🔥 확실하게 DB에서 다시 로드 (증발 원천 차단)
+      // 🔥 확실하게 DB에서 다시 로드 (새로고침 시 증발 원천 차단)
       await loadGameData(user);
 
       setPopupMsg(`🎉 [${getGradeLabel(newGrade)}] ${newName} 획득!\n(가방에 보관되었습니다)`); 
@@ -329,11 +336,11 @@ export default function GameLobby() {
     await loadGameData(user);
   };
 
-  // 💡 [핵심 해결] 무기 교체 (Swap) 시 DB 꼬임 완전 방지
+  // 💡 [핵심 해결] 무기 교체 (Swap) 시 DB 꼬임 완전 방지 및 동기화
   const handleSwap = async () => { 
     if (!mainWeapon || !subWeapon) return;
     
-    // 화면 즉시 교체
+    // 화면 즉시 교체 적용
     const tMain = mainWeapon ? { ...mainWeapon, slot_type: 'sub' } : null;
     const tSub = subWeapon ? { ...subWeapon, slot_type: 'main' } : null;
     setMainWeapon(tSub); setSubWeapon(tMain); setUseProtectMain(false); setUseProtectSub(false);
@@ -343,7 +350,8 @@ export default function GameLobby() {
     await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', subWeapon.id);
     await supabase.from('weapons').update({ slot_type: 'sub' }).eq('id', mainWeapon.id);
     
-    await loadGameData(user); // 최종적으로 서버에서 최신화 확정
+    // 🔥 최종적으로 서버에서 최신화 확정
+    await loadGameData(user); 
   };
 
   const executeEnhance = async (slot) => { 
@@ -374,13 +382,22 @@ export default function GameLobby() {
         let newAtk = targetWeapon.attack + totalAddedAtk;
         resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${totalAddedAtk}] 상승했습니다!\n(증가폭: ${min} ~ ${max} 중 랜덤)`;
         
+        // 화면 즉시 적용
+        const updatedWeapon = { ...targetWeapon, enhancement_level: newLvl, attack: newAtk };
+        if (slot === 'main') setMainWeapon(updatedWeapon); else setSubWeapon(updatedWeapon);
+        
         await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id);
       } else {
         if (isProtecting) {
           resultMsg = `💥 강화 실패!\n하지만 파괴방지 주문서가 무기를 보호했습니다.`;
+          const updatedWeapon = { ...targetWeapon, protect_count: targetWeapon.protect_count - 1 };
+          if (slot === 'main') setMainWeapon(updatedWeapon); else setSubWeapon(updatedWeapon);
+          
           await supabase.from('weapons').update({ protect_count: targetWeapon.protect_count - 1 }).eq('id', targetWeapon.id);
         } else {
           resultMsg = `💀 쨍그랑!\n무기가 형체도 없이 파괴되었습니다...`;
+          // 화면 즉시 적용
+          if (slot === 'main') setMainWeapon(null); else setSubWeapon(null);
           await supabase.from('weapons').delete().eq('id', targetWeapon.id);
         }
       }
