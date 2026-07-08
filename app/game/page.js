@@ -18,6 +18,7 @@ const generateUUID = () => {
 export default function GameLobby() {
   const [activeTab, setActiveTab] = useState('arena'); 
 
+  // --- 유저 및 재화 상태 ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null); 
@@ -25,6 +26,7 @@ export default function GameLobby() {
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   const [points, setPoints] = useState(0); 
+  
   const [weaponBoxes, setWeaponBoxes] = useState(0);        
   const [scrollBoxes, setScrollBoxes] = useState(0); 
   const [normalScrolls, setNormalScrolls] = useState(0); 
@@ -46,7 +48,6 @@ export default function GameLobby() {
   const [buyQtyWeapon, setBuyQtyWeapon] = useState(1);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
 
-  // 💡 멀티 랭킹 상태 추가 ('attack', 'enhance', 'wealth')
   const [rankType, setRankType] = useState('attack');
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingRank, setLoadingRank] = useState(false);
@@ -96,6 +97,7 @@ export default function GameLobby() {
     const initApp = async () => {
       try {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error("환경변수 오류");
+
         const { data: { session } } = await supabase.auth.getSession();
         let userId = session?.user?.id || localStorage.getItem('game_guest_uuid');
         if (!userId) { userId = generateUUID(); localStorage.setItem('game_guest_uuid', userId); }
@@ -105,7 +107,6 @@ export default function GameLobby() {
     initApp();
   }, []);
 
-  // 💡 [신규] 멀티 랭킹 로드 (rankType이 바뀔 때마다 재실행됨)
   useEffect(() => {
     if (activeTab === 'arena') {
       const fetchRank = async () => {
@@ -131,7 +132,6 @@ export default function GameLobby() {
               setLeaderboard(uniqueRank.slice(0, 10)); 
             } else setLeaderboard([]);
           } else if (rankType === 'wealth') {
-            // 재력 랭킹: 포인트를 기준으로 정렬하고, 결투를 위해 메인 무기 정보를 가져옵니다.
             const { data: profiles } = await supabase.from('game_profiles').select('id, nickname, points').order('points', { ascending: false }).limit(20);
             if (profiles && profiles.length > 0) {
               const uIds = profiles.map(p => p.id);
@@ -151,7 +151,7 @@ export default function GameLobby() {
       };
       fetchRank();
     }
-  }, [activeTab, rankType]); // rankType 변경 시 랭킹 자동 갱신
+  }, [activeTab, rankType]); 
 
   const handleDuel = async (target) => {
     const myAtk = (mainWeapon?.attack || 0) + (subWeapon?.attack || 0);
@@ -176,6 +176,7 @@ export default function GameLobby() {
   const handleStartNewGame = async () => { 
     if (!tempNickname.trim()) return alert("닉네임을 입력해주세요!");
     setLoading(true);
+
     const newProfile = { id: user, nickname: tempNickname.trim(), points: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3 };
     await supabase.from('game_profiles').upsert([newProfile]);
     const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: 3 };
@@ -313,12 +314,24 @@ export default function GameLobby() {
 
   if (loading) return <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6">대장간 입장 중...</div>;
 
+  // 💡 [수정] 국가 선택 완전 제거된 깔끔한 인트로 화면
+  if (showIntro) return (
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col items-center justify-center bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-50 px-6" style={{ height: 'calc(100dvh - 50px)' }}>
+      <div className="text-center mb-8"><div className="text-7xl mb-4">🗡️</div><h1 className="text-4xl font-black text-yellow-500 mb-2 tracking-wider">무기키우기</h1></div>
+      <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center shadow-xl">
+        <h2 className="text-gray-300 text-xs font-bold mb-3">닉네임을 입력하세요</h2>
+        <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} maxLength={10} className="w-full bg-gray-950 border-2 border-gray-700 rounded-xl p-4 text-center text-white font-black text-lg mb-6 focus:border-yellow-500 outline-none transition-colors" placeholder="예: 무기장인" />
+        <button onClick={handleStartNewGame} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-sm shadow-md transition-colors">대장간 입장하기 (100만 P 지급)</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
       
+      {/* 💡 [수정] 상단 헤더에서 국기 제거 */}
       <header className="flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800 shrink-0">
         <h1 className="font-black text-lg text-yellow-500 tracking-wider">무기키우기</h1>
-        <button className="text-xl">🇰🇷</button>
       </header>
       
       <div className="bg-gray-800 px-3 py-1.5 flex justify-between items-center shrink-0 shadow-md">
@@ -415,11 +428,10 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 🏆 투기장 랭킹 탭 (멀티 랭킹 적용!) */}
+        {/* 🏆 투기장 랭킹 탭 */}
         {activeTab === 'arena' && (
           <div className="flex flex-col h-full gap-2">
             
-            {/* 💡 랭킹 종류 선택 탭 */}
             <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
               <button onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 최고공격력</button>
               <button onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 장인</button>
@@ -446,7 +458,6 @@ export default function GameLobby() {
                         </div>
                       </div>
                       
-                      {/* 💡 랭킹 타입에 따라 우측 표시 정보가 바뀝니다 */}
                       <div className="flex items-center gap-1.5 shrink-0">
                         <div className="bg-gray-950 px-1.5 py-1 rounded border border-gray-700 text-right flex flex-col justify-center min-w-[55px]">
                           {rankType === 'attack' && <span className="text-[10px] font-black text-red-400 w-full block">⚔️ {ranker.attack.toLocaleString()}</span>}
