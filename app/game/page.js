@@ -30,7 +30,6 @@ export default function GameLobby() {
   // 재화 분리: 결투 포인트(points)와 상점 재화(dang)
   const [points, setPoints] = useState(0); 
   const [dang, setDang] = useState(0); 
-  const [enhanceCount, setEnhanceCount] = useState(0); // 💡 강화 횟수 상태 추가
 
   // 아이템 보유량
   const [weaponBoxes, setWeaponBoxes] = useState(0);        
@@ -74,6 +73,7 @@ export default function GameLobby() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingRank, setLoadingRank] = useState(false);
   const [duelingTarget, setDuelingTarget] = useState(null); 
+  const [enhanceCount, setEnhanceCount] = useState(0);
 
   // --- UI 디자인 설정 ---
   const gradeCardStyles = {
@@ -105,7 +105,7 @@ export default function GameLobby() {
       setNickname(profile.nickname || '이름없음'); 
       setPoints(profile.points || 0); 
       setDang(profile.dang || 0); 
-      setEnhanceCount(profile.enhance_count || 0); // 💡 횟수 갱신
+      setEnhanceCount(profile.enhance_count || 0); 
       setWeaponBoxes(profile.weapon_boxes || 0); 
       setScrollBoxes(profile.scroll_boxes || 0);
       setNormalScrolls(profile.normal_scrolls || 0); 
@@ -138,13 +138,21 @@ export default function GameLobby() {
     initApp();
   }, [loadGameData]);
 
-  // 💡 [투기장 랭킹 로직] 강화 횟수 랭킹 반영
+  // 💡 [투기장 랭킹 로직] 에러 방어 코드 추가 및 select(*)로 변경
   useEffect(() => {
     if (activeTab === 'arena') {
       const fetchRank = async () => {
         setLoadingRank(true);
         try {
-          const { data: profiles } = await supabase.from('game_profiles').select('id, nickname, points, enhance_count').limit(50);
+          // 특정 컬럼 미지정으로 조회하여 컬럼 미존재 에러(crash) 방지
+          const { data: profiles, error: pErr } = await supabase.from('game_profiles').select('*').limit(50);
+          
+          if (pErr) {
+            console.error("랭킹 프로필 로드 에러:", pErr);
+            alert("랭킹 데이터를 불러올 수 없습니다. DB 설정을 확인해주세요.\n" + pErr.message);
+            setLoadingRank(false);
+            return;
+          }
             
           if (profiles && profiles.length > 0) {
             const { data: allMainWeapons } = await supabase.from('weapons').select('*').eq('slot_type', 'main');
@@ -152,7 +160,7 @@ export default function GameLobby() {
             const rankData = profiles.map(p => {
               if (p.id === user) {
                 return { 
-                  ...p, points: points, enhance_count: enhanceCount, // 내 오프라인 횟수 갱신
+                  ...p, points: points, enhance_count: enhanceCount, 
                   mainWeapon: mainWeapon || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
                 };
               }
@@ -160,7 +168,6 @@ export default function GameLobby() {
               return { ...p, mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
             });
 
-            // 💡 강화 랭킹 정렬 시 enhance_count를 기준으로 내림차순 정렬
             rankData.sort((a, b) => {
               if (rankType === 'attack') return b.mainWeapon.attack - a.mainWeapon.attack;
               if (rankType === 'enhance') return (b.enhance_count || 0) - (a.enhance_count || 0);
@@ -371,7 +378,6 @@ export default function GameLobby() {
     await loadGameData(user); 
   };
 
-  // 💡 강화 성공 시 횟수 증가 로직 추가
   const executeEnhance = async (slot) => { 
     setWarningTarget(null); setEnhancingSlot(slot);
     const targetWeapon = slot === 'main' ? mainWeapon : subWeapon;
@@ -400,14 +406,13 @@ export default function GameLobby() {
         let newAtk = targetWeapon.attack + totalAddedAtk;
         resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${totalAddedAtk}] 상승했습니다!\n(증가폭: ${min} ~ ${max} 중 랜덤)`;
         
-        // 💡 성공 시 횟수 1 증가
         const newEnhanceCount = enhanceCount + 1;
         setEnhanceCount(newEnhanceCount);
 
-        await Promise.all([
-          supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id),
-          supabase.from('game_profiles').update({ enhance_count: newEnhanceCount }).eq('id', user)
-        ]);
+        // 💡 에러 방어 로직 (개별 업데이트)
+        await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id);
+        await supabase.from('game_profiles').update({ enhance_count: newEnhanceCount }).eq('id', user);
+        
       } else {
         if (isProtecting) {
           resultMsg = `💥 강화 실패!\n하지만 파괴방지 주문서가 무기를 보호했습니다.`;
@@ -563,7 +568,6 @@ export default function GameLobby() {
             
             <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
               <button onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
-              {/* 💡 강화 버튼 텍스트를 "강화 횟수"로 변경 */}
               <button onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
               <button onClick={() => setRankType('points')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors ${rankType === 'points' ? 'bg-yellow-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🏆 결투 포인트</button>
             </div>
@@ -591,7 +595,6 @@ export default function GameLobby() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <div className="bg-gray-950 px-1.5 py-1 rounded border border-gray-700 text-right flex flex-col justify-center min-w-[55px]">
                           {rankType === 'attack' && <span className="text-[10px] font-black text-red-400 w-full block">⚔️ {ranker.mainWeapon.attack.toLocaleString()}</span>}
-                          {/* 💡 UI 출력도 강화 레벨 대신 "강화 성공 횟수"를 띄워주도록 수정 */}
                           {rankType === 'enhance' && <span className="text-[10px] font-black text-blue-400 w-full block">🛠️ {(ranker.enhance_count || 0).toLocaleString()}회</span>}
                           {rankType === 'points' && <span className="text-[10px] font-black text-yellow-400 w-full block">🏆 {(ranker.points || 0).toLocaleString()}</span>}
                         </div>
