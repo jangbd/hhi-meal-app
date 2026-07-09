@@ -10,13 +10,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // 💡 욕설 및 금지어 필터
 const FORBIDDEN_WORDS = ['씨발', '개새끼', '존나', '창년', '병신', '개자식', '미친', '운영자', '관리자'];
 
-// 💡 고유 ID 생성기
+// 고유 ID 생성기
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
+};
+
+// 💡 오늘 날짜 구하기 (초기화 기준)
+const getTodayString = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
 export default function GameLobby() {
@@ -37,6 +43,9 @@ export default function GameLobby() {
   const [points, setPoints] = useState(0); 
   const [dang, setDang] = useState(0); 
   const [enhanceCount, setEnhanceCount] = useState(0);
+  
+  // 💡 일일 결투 횟수 상태 추가
+  const [duelCount, setDuelCount] = useState(10);
 
   // 아이템 보유량
   const [weaponBoxes, setWeaponBoxes] = useState(0);        
@@ -65,11 +74,7 @@ export default function GameLobby() {
   // 다중 판매(일괄 판매) 상태
   const [isMultiSellModalOpen, setIsMultiSellModalOpen] = useState(false);
   const [sellGrades, setSellGrades] = useState({
-    normal: true,
-    magic: true,
-    rare: false,
-    epic: false,
-    legendary: false
+    normal: true, magic: true, rare: false, epic: false, legendary: false
   });
 
   // DB 갱신 동기화 트리거
@@ -101,17 +106,28 @@ export default function GameLobby() {
     if (level >= 7) return 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)) scale-105'; return '';
   };
 
-  // 데이터 로딩
+  // 💡 데이터 로딩 (모든 정보 DB에서 불러오기 + 일일 결투 횟수 리셋 로직)
   const loadGameData = useCallback(async (userId) => {
     try {
       let { data: profile, error: profileErr } = await supabase.from('game_profiles').select('*').eq('id', userId).maybeSingle();
       if (profileErr) throw profileErr;
       if (!profile) { setShowIntro(true); setLoading(false); return; }
 
+      // 💡 결투 횟수 초기화 체크
+      const today = getTodayString();
+      let currentDuelCount = profile.duel_count ?? 10;
+      let lastDuelDate = profile.last_duel_date;
+
+      if (lastDuelDate !== today) {
+        currentDuelCount = 10;
+        await supabase.from('game_profiles').update({ duel_count: 10, last_duel_date: today }).eq('id', userId);
+      }
+
       setNickname(profile.nickname || '이름없음'); 
       setPoints(profile.points || 0); 
       setDang(profile.dang || 0); 
       setEnhanceCount(profile.enhance_count || 0); 
+      setDuelCount(currentDuelCount); // 횟수 세팅
       setWeaponBoxes(profile.weapon_boxes || 0); 
       setScrollBoxes(profile.scroll_boxes || 0);
       setNormalScrolls(profile.normal_scrolls || 0); 
@@ -188,9 +204,14 @@ export default function GameLobby() {
     }
   }, [activeTab, rankType, syncTrigger, mainWeapon, points, user, enhanceCount]); 
 
-  // 결투 시작
+  // 💡 결투 시작 (횟수 차감 및 제한 로직 추가)
   const handleDuel = async (target) => {
     if (isProcessing) return;
+    
+    if (duelCount <= 0) {
+      return alert('⚠️ 오늘의 결투 횟수(10회)를 모두 소진했습니다!\n(광고 보고 횟수 충전하기 기능은 추후 업데이트 예정입니다)');
+    }
+
     const myAtk = (mainWeapon?.attack || 0) + (subWeapon?.attack || 0);
     if (myAtk === 0) return alert('장착된 무기가 없습니다! 무기를 먼저 장착하고 도전하세요.');
 
@@ -203,19 +224,22 @@ export default function GameLobby() {
         const targetBaseAtk = target.mainWeapon?.attack || 0;
         const targetPower = Math.floor(targetBaseAtk * (0.8 + Math.random() * 0.4));
 
+        const nextDuelCount = duelCount - 1; // 횟수 1 차감
+        setDuelCount(nextDuelCount);
+
         let resultMsg = '';
         if (myPower >= targetPower) {
           const reward = 50; 
           const newPoints = points + reward;
           setPoints(newPoints); 
-          await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
-          resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n명예로운 승리로 결투 포인트 ${reward} P를 획득했습니다!`;
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user); 
+          resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n명예로운 승리로 결투 포인트 ${reward} P를 획득했습니다!\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         } else {
           const penalty = 20; 
           const newPoints = Math.max(0, points - penalty);
           setPoints(newPoints); 
-          await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
-          resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n패배의 대가로 결투 포인트 ${penalty} P를 잃었습니다... 강해져서 돌아오십시오.`;
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user); 
+          resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n패배의 대가로 결투 포인트 ${penalty} P를 잃었습니다... 강해져서 돌아오십시오.\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         }
         
         setPopupMsg(resultMsg);
@@ -238,7 +262,11 @@ export default function GameLobby() {
       const { data: existingUser } = await supabase.from('game_profiles').select('id').eq('nickname', nicknameTrim).maybeSingle();
       if (existingUser) { alert("이미 사용 중인 닉네임입니다."); return; }
 
-      await supabase.from('game_profiles').upsert([{ id: user, nickname: nicknameTrim, points: 1000, dang: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, enhance_count: 0 }]);
+      await supabase.from('game_profiles').upsert([{ 
+        id: user, nickname: nicknameTrim, points: 1000, dang: 1000000, 
+        weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, 
+        enhance_count: 0, duel_count: 10, last_duel_date: getTodayString() 
+      }]);
       
       const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: 3 };
       const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: 10, protect_count: 3 };
@@ -264,7 +292,6 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
-  // 💡 [해결] 상점 구매 로직: 구매 후 수량 초기화 100% 보장
   const handleBuyBox = async (type, baseCost, qty) => {
     if (isProcessing) return;
     const totalCost = baseCost * qty;
@@ -288,7 +315,6 @@ export default function GameLobby() {
       await supabase.from('game_profiles').update(updates).eq('id', user);
       await loadGameData(user); 
       
-      // 💡 데이터가 불러와진 직후 수량을 강제로 1로 초기화합니다!
       if (type === 'weapon') {
         setBuyQtyWeapon(1);
       } else {
@@ -323,7 +349,7 @@ export default function GameLobby() {
         setPopupMsg(`🎉 [${getGradeLabel(newGrade)}] ${newName} 획득!\n(가방에 보관되었습니다)`); 
         setActiveGacha(null);
         await loadGameData(user); 
-        setIsProcessing(false); // 타이머 끝나면 락 해제
+        setIsProcessing(false); 
       }, 800);
     } catch(err) {
       alert("상자 열기 오류!");
@@ -364,7 +390,6 @@ export default function GameLobby() {
     }
   };
 
-  // 장착 시스템 (방어막 적용)
   const handleEquip = async (targetSlot) => { 
     if (isProcessing) return;
     setIsProcessing(true);
@@ -426,7 +451,6 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
-  // 교환 시스템 (증발 오류 완벽 차단)
   const handleSwap = async () => { 
     if (isProcessing) return;
     if (!mainWeapon && !subWeapon) return; 
@@ -436,11 +460,9 @@ export default function GameLobby() {
       const currentMain = mainWeapon;
       const currentSub = subWeapon;
 
-      // 1. 화면 먼저 변경 (가장 빠른 반응속도)
       setMainWeapon(currentSub ? { ...currentSub, slot_type: 'main' } : null);
       setSubWeapon(currentMain ? { ...currentMain, slot_type: 'sub' } : null);
 
-      // 2. DB 업데이트 순차적 안전 보장 (절대 꼬이지 않음)
       if (currentMain) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentMain.id);
       if (currentSub) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentSub.id);
       if (currentSub) await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', currentSub.id);
@@ -451,7 +473,6 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
-  // 강화 시스템 (강화 성공 횟수 증가, 롤백 오류 차단)
   const executeEnhance = async (slot) => { 
     if (isProcessing) return;
     setIsProcessing(true);
@@ -501,10 +522,10 @@ export default function GameLobby() {
           }
         }
         setPopupMsg(resultMsg);
-        await loadGameData(user); // 모든 상태 강제 동기화
+        await loadGameData(user); 
       } finally {
         setEnhancingSlot(null); 
-        setIsProcessing(false); // 무조건 락 해제
+        setIsProcessing(false); 
       }
     }, 1200);
   };
@@ -537,7 +558,6 @@ export default function GameLobby() {
   return (
     <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
       
-      {/* 💡 [방어막 UI] 서버 저장 중에 투명한 막을 쳐서 다른 조작을 원천 차단 */}
       {isProcessing && (
         <div className="fixed inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
            <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">
@@ -658,6 +678,12 @@ export default function GameLobby() {
         {activeTab === 'arena' && (
           <div className="flex flex-col h-full gap-2">
             
+            {/* 💡 [UI 수정] 일일 결투 횟수 표시 영역 추가 */}
+            <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
+              <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
+              <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
+            </div>
+
             <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
               <button disabled={isProcessing} onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
               <button disabled={isProcessing} onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
