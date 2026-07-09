@@ -55,7 +55,17 @@ export default function GameLobby() {
   const [buyQtyWeapon, setBuyQtyWeapon] = useState(1);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
 
-  // 💡 [동기화 핵심 트리거] DB가 갱신될 때마다 랭킹을 다시 불러오게 만드는 변수
+  // 💡 다중 판매(일괄 판매) 모달 및 설정 상태 추가
+  const [isMultiSellModalOpen, setIsMultiSellModalOpen] = useState(false);
+  const [sellGrades, setSellGrades] = useState({
+    normal: true,
+    magic: true,
+    rare: false,
+    epic: false,
+    legendary: false
+  });
+
+  // [동기화 핵심 트리거] DB가 갱신될 때마다 랭킹을 다시 불러오게 만드는 변수
   const [syncTrigger, setSyncTrigger] = useState(0);
 
   // 투기장(랭킹) 상태
@@ -84,7 +94,7 @@ export default function GameLobby() {
     if (level >= 7) return 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)) scale-105'; return '';
   };
 
-  // 💡 [핵심 최적화] 무조건 DB 데이터를 그대로 긁어와서 화면을 세팅하는 함수
+  // 데이터 로딩
   const loadGameData = useCallback(async (userId) => {
     try {
       let { data: profile, error: profileErr } = await supabase.from('game_profiles').select('*').eq('id', userId).maybeSingle();
@@ -109,8 +119,6 @@ export default function GameLobby() {
       
       setShowIntro(false); 
       setLoading(false);
-      
-      // 🚀 데이터 로드 완료 시 랭킹도 갱신하도록 트리거 발동!
       setSyncTrigger(prev => prev + 1);
     } catch (error) { setLoadError(error.message); }
   }, []);
@@ -128,23 +136,26 @@ export default function GameLobby() {
     initApp();
   }, [loadGameData]);
 
-  // 💡 [투기장 랭킹 로직] 가짜 로컬 데이터 없이 무조건 DB 최신 데이터만 반영!
+  // 랭킹 업데이트
   useEffect(() => {
     if (activeTab === 'arena') {
       const fetchRank = async () => {
         setLoadingRank(true);
         try {
           const { data: profiles } = await supabase.from('game_profiles').select('id, nickname, points').limit(50);
+            
           if (profiles && profiles.length > 0) {
-            // DB에 등록된 모든 'main' 무기만 긁어옴
             const { data: allMainWeapons } = await supabase.from('weapons').select('*').eq('slot_type', 'main');
 
             const rankData = profiles.map(p => {
+              if (p.id === user) {
+                return { 
+                  ...p, points: points, 
+                  mainWeapon: mainWeapon || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
+                };
+              }
               const main = (allMainWeapons || []).find(w => w.user_id === p.id);
-              return { 
-                ...p, 
-                mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
-              };
+              return { ...p, mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
             });
 
             rankData.sort((a, b) => {
@@ -160,8 +171,9 @@ export default function GameLobby() {
       };
       fetchRank();
     }
-  }, [activeTab, rankType, syncTrigger]); // syncTrigger가 바뀔 때마다 랭킹 즉시 새로고침!
+  }, [activeTab, rankType, syncTrigger, mainWeapon, points, user]); 
 
+  // 결투 시스템
   const handleDuel = async (target) => {
     const myAtk = (mainWeapon?.attack || 0) + (subWeapon?.attack || 0);
     if (myAtk === 0) return alert('장착된 무기가 없습니다! 무기를 먼저 장착하고 도전하세요.');
@@ -177,20 +189,20 @@ export default function GameLobby() {
       if (myPower >= targetPower) {
         const reward = 50; 
         const newPoints = points + reward;
-        setPoints(newPoints); // 즉시 화면 반영
+        setPoints(newPoints); 
         await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
         resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n명예로운 승리로 결투 포인트 ${reward} P를 획득했습니다!`;
       } else {
         const penalty = 20; 
         const newPoints = Math.max(0, points - penalty);
-        setPoints(newPoints); // 즉시 화면 반영
+        setPoints(newPoints); 
         await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
         resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n패배의 대가로 결투 포인트 ${penalty} P를 잃었습니다... 강해져서 돌아오십시오.`;
       }
       
       setDuelingTarget(null);
       setPopupMsg(resultMsg);
-      await loadGameData(user); // 포인트 갱신 후 동기화
+      await loadGameData(user);
     }, 2000); 
   };
 
@@ -222,7 +234,7 @@ export default function GameLobby() {
     if (!window.confirm(`💰 ${totalCost} 댕으로 구매하시겠습니까?`)) return;
     
     const newDang = dang - totalCost; 
-    setDang(newDang); // 즉각 화면 반영
+    setDang(newDang); 
 
     let updates = { dang: newDang };
     if (type === 'weapon') { 
@@ -236,7 +248,7 @@ export default function GameLobby() {
     }
     
     await supabase.from('game_profiles').update(updates).eq('id', user);
-    await loadGameData(user); // 동기화
+    await loadGameData(user); 
   };
 
   const handleOpenWeaponBox = async () => {
@@ -247,22 +259,21 @@ export default function GameLobby() {
     
     const nextWeaponBoxes = weaponBoxes - 1;
     setWeaponBoxes(nextWeaponBoxes); 
+    
+    const rand = Math.random() * 100; let newGrade = 'normal';
+    if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
+    const baseAtk = { normal: 10, magic: 25, rare: 60, epic: 150, legendary: 400 }[newGrade];
+    const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
+    const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
+
     await supabase.from('game_profiles').update({ weapon_boxes: nextWeaponBoxes }).eq('id', user);
+    await supabase.from('weapons').insert([newWeaponData]); 
     
     setTimeout(async () => {
-      const rand = Math.random() * 100; let newGrade = 'normal';
-      if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
-      const baseAtk = { normal: 10, magic: 25, rare: 60, epic: 150, legendary: 400 }[newGrade];
-      const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
-      
-      const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
-      
       setInventory(prev => [...prev, newWeaponData]); 
-      await supabase.from('weapons').insert([newWeaponData]); 
-      
       setPopupMsg(`🎉 [${getGradeLabel(newGrade)}] ${newName} 획득!\n(가방에 보관되었습니다)`); 
       setActiveGacha(null);
-      await loadGameData(user); // 확실하게 동기화
+      await loadGameData(user); 
     }, 800);
   };
 
@@ -272,19 +283,19 @@ export default function GameLobby() {
     
     const nextScrollBoxes = scrollBoxes - 1;
     setScrollBoxes(nextScrollBoxes); 
-    await supabase.from('game_profiles').update({ scroll_boxes: nextScrollBoxes }).eq('id', user);
+    
+    const rand = Math.random() * 100; let msg; 
+    let updates = { scroll_boxes: nextScrollBoxes };
+
+    if (rand <= 20) { msg = '🛡️ 파괴방지 주문서 획득!'; updates.protect_scrolls = protectScrolls + 1; }
+    else if (rand <= 50) { msg = '✨ 축복받은 무기 강화 주문서 획득!'; updates.blessed_scrolls = blessedScrolls + 1; }
+    else { msg = '📜 무기 강화 주문서 획득!'; updates.normal_scrolls = normalScrolls + 1; }
+    
+    await supabase.from('game_profiles').update(updates).eq('id', user);
     
     setTimeout(async () => {
-      const rand = Math.random() * 100; let msg; 
-      let updates = {};
-      if (rand <= 20) { msg = '🛡️ 파괴방지 주문서 획득!'; setProtectScrolls(p => p + 1); updates.protect_scrolls = protectScrolls + 1; }
-      else if (rand <= 50) { msg = '✨ 축복받은 무기 강화 주문서 획득!'; setBlessedScrolls(p => p + 1); updates.blessed_scrolls = blessedScrolls + 1; }
-      else { msg = '📜 무기 강화 주문서 획득!'; setNormalScrolls(p => p + 1); updates.normal_scrolls = normalScrolls + 1; }
-      
-      await supabase.from('game_profiles').update(updates).eq('id', user);
-      
       setPopupMsg(msg); setActiveGacha(null);
-      await loadGameData(user); // 확실하게 동기화
+      await loadGameData(user); 
     }, 500);
   };
 
@@ -315,33 +326,34 @@ export default function GameLobby() {
     await loadGameData(user); 
   };
 
-  // 💡 [다중 판매 스마트 분기] 에픽/전설 보호 로직 적용
-  const handleMultiSell = async () => {
-    const itemsToSell = inventory.filter(w => ['normal', 'magic', 'rare'].includes(w.weapon_grade));
-    
+  // 💡 [선택 다중 판매 실행 로직]
+  const executeMultiSell = async () => {
+    // 체크된 등급만 필터링
+    const targetGrades = Object.keys(sellGrades).filter(g => sellGrades[g]);
+    const itemsToSell = inventory.filter(w => targetGrades.includes(w.weapon_grade));
+
     if (itemsToSell.length === 0) {
-      return alert('가방에 팔 수 있는 하위 등급(희귀 이하) 무기가 없습니다!\n※ 에픽/전설 무기는 일괄 판매되지 않습니다.');
+      return alert('선택하신 등급에 해당하는 무기가 보관함에 없습니다!');
     }
-    
-    if (!window.confirm(`가방 안의 '희귀 등급 이하' 무기 ${itemsToSell.length}개를 일괄 판매하시겠습니까?\n※ 에픽 및 전설 무기는 보호됩니다.`)) return;
-    
+
     let totalGain = 0;
     const idsToDelete = itemsToSell.map(w => w.id);
-    
+
     itemsToSell.forEach(item => {
-      const base = { normal: 100, magic: 300, rare: 1000 }[item.weapon_grade];
+      const base = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[item.weapon_grade];
       totalGain += (base + (item.enhancement_level * 500));
     });
-    
-    // DB에서 선택된 아이템들 일괄 삭제
+
+    // DB에서 선택된 무기 일괄 삭제
     await supabase.from('weapons').delete().in('id', idsToDelete);
     
     // 재화 업데이트
     const newDang = dang + totalGain;
     await supabase.from('game_profiles').update({ dang: newDang }).eq('id', user);
     
-    setPopupMsg(`💰 하위 등급 무기 일괄 판매 완료!\n총 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
-    await loadGameData(user); // 강제 동기화
+    setIsMultiSellModalOpen(false); // 모달 닫기
+    setPopupMsg(`💰 선택 일괄 판매 완료!\n총 ${itemsToSell.length}개의 무기를 팔아 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
+    await loadGameData(user); // 강제 갱신
   };
 
   const handleSwap = async () => { 
@@ -489,7 +501,13 @@ export default function GameLobby() {
             <div>
               <div className="flex justify-between items-center mb-2 px-2">
                   <h2 className="text-xs font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/10)</h2>
-                  <button onClick={handleMultiSell} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700">전체 판매 🗑️</button>
+                  {/* 💡 전체 판매 대신 일괄 판매 모달 띄우기 버튼으로 변경 */}
+                  <button 
+                    onClick={() => setIsMultiSellModalOpen(true)}
+                    className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700"
+                  >
+                    일괄 판매 🗑️
+                  </button>
               </div>
               <div className="grid grid-cols-5 gap-2 px-2">
                 {Array(10).fill(0).map((_, i) => {
@@ -503,7 +521,7 @@ export default function GameLobby() {
                           </div>
                       );
                   }
-                  return <div key={`empty-${i}`} className="aspect-square bg-gray-900 rounded-md border border-gray-700 flex items-center justify-center text-gray-600 text-[9px]">빈칸</div>;
+                  return <div key={`empty-${i}`} className="aspect-square bg-gray-900 rounded-md border border-gray-700 flex items-center justify-center text-gray-600 text-[9px] shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">빈칸</div>;
                 })}
               </div>
             </div>
@@ -511,26 +529,24 @@ export default function GameLobby() {
             <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 mx-2 flex flex-col">
               <h2 className="text-[11px] font-bold text-yellow-400 mb-3">🛒 포인트 상점</h2>
               <div className="flex gap-3">
-                  {[ { type: 'scroll', name: '주문서 상자', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
-                     { type: 'weapon', name: '무기 상자', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
-                      <div key={item.type} className="flex-1 bg-gray-900 p-3 rounded-lg border border-gray-700 flex flex-col gap-2">
-                          <p className="text-[10px] font-bold text-gray-300 text-center">{item.name}</p>
-                          <div className="flex justify-between items-center bg-gray-800 p-1 rounded-lg border border-gray-700">
+                  {[ { type: 'scroll', name: '의문의 주문서', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
+                     { type: 'weapon', name: '고급 무기', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
+                      <div key={item.type} className="flex-1 bg-gray-900 p-3 rounded-md text-center border border-gray-700 flex flex-col justify-between">
+                          <p className="text-[10px] font-bold text-gray-300 mb-1">{item.name} 상자</p>
+                          <div className="flex justify-center items-center gap-1 mb-2 bg-gray-800 py-1 rounded">
                             <button onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded text-lg font-black text-white hover:bg-gray-600">-</button>
                             <span className="text-sm font-black w-8 text-center">{item.qty}</span>
                             <button onClick={() => item.setQty(prev => prev+1)} className="w-8 h-8 flex items-center justify-center bg-gray-700 rounded text-lg font-black text-white hover:bg-gray-600">+</button>
                           </div>
-                          <button onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-black text-[11px] py-3 rounded-lg text-white hover:bg-yellow-500 active:scale-[0.98] shadow-md">
-                            {item.cost * item.qty} 댕 구매
-                          </button>
+                          <button onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[11px] py-3 rounded text-white active:bg-yellow-500 shadow-md">구매 ({item.cost * item.qty}댕)</button>
                       </div>
                   ))}
               </div>
             </div>
             
             <div className="flex gap-2 px-2 mt-2">
-              <button onClick={handleOpenScrollBox} disabled={activeGacha !== null} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white py-4 rounded-xl text-xs font-black shadow-lg">📦 주문서 상자 ({scrollBoxes})</button>
-              <button onClick={handleOpenWeaponBox} disabled={activeGacha !== null} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-4 rounded-xl text-xs font-black shadow-lg">⚔️ 무기 상자 ({weaponBoxes})</button>
+              <button onClick={handleOpenScrollBox} disabled={activeGacha !== null} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white py-4 rounded-xl text-xs font-black shadow-md">📦 주문서 상자 열기 ({scrollBoxes})</button>
+              <button onClick={handleOpenWeaponBox} disabled={activeGacha !== null} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-4 rounded-xl text-xs font-black shadow-md">⚔️ 무기 상자 열기 ({weaponBoxes})</button>
             </div>
           </div>
         )}
@@ -614,6 +630,51 @@ export default function GameLobby() {
           </div>
           <h2 className="text-3xl font-black text-red-500 mb-2 animate-pulse tracking-widest">결투 진행 중...</h2>
           <p className="text-gray-400 text-sm mt-4">상대의 방어구를 파괴하고 있습니다...</p>
+        </div>
+      )}
+
+      {/* 💡 [신규] 일괄 판매 등급 선택 모달창 */}
+      {isMultiSellModalOpen && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[130] p-6">
+          <div className="bg-gray-900 border-2 border-gray-700 rounded-xl p-5 w-full max-w-sm shadow-2xl">
+            <h2 className="text-lg font-black text-white mb-4 text-center">일괄 판매 설정</h2>
+            
+            <p className="text-xs text-gray-400 mb-3 text-center">판매할 무기의 등급을 선택하세요.</p>
+            
+            <div className="space-y-2 mb-5">
+              {['normal', 'magic', 'rare', 'epic', 'legendary'].map(grade => (
+                <label key={grade} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sellGrades[grade] ? 'bg-red-900/30 border-red-700' : 'bg-gray-800 border-gray-700'}`}>
+                  <input 
+                    type="checkbox" 
+                    checked={sellGrades[grade]} 
+                    onChange={(e) => setSellGrades(prev => ({ ...prev, [grade]: e.target.checked }))}
+                    className="w-5 h-5 accent-red-500"
+                  />
+                  <span className={`text-sm font-bold ${gradeTextColors[grade]}`}>
+                    {getGradeLabel(grade)} 등급
+                  </span>
+                  <span className="text-xs text-gray-400 ml-auto">
+                    (보유: {inventory.filter(w => w.weapon_grade === grade).length}개)
+                  </span>
+                </label>
+              ))}
+            </div>
+            
+            <div className="bg-gray-950 p-3 rounded-lg text-center mb-5 border border-gray-800">
+               <p className="text-xs text-gray-400 mb-1">예상 획득 댕</p>
+               <p className="text-xl font-black text-yellow-500">
+                 {inventory.filter(w => sellGrades[w.weapon_grade]).reduce((sum, item) => {
+                    const base = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[item.weapon_grade];
+                    return sum + (base + (item.enhancement_level * 500));
+                 }, 0).toLocaleString()} 댕
+               </p>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setIsMultiSellModalOpen(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg text-sm transition-colors">취소</button>
+              <button onClick={executeMultiSell} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg text-sm shadow-md transition-colors">판매 실행</button>
+            </div>
+          </div>
         </div>
       )}
 
