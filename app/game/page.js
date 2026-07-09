@@ -19,17 +19,48 @@ const generateUUID = () => {
   });
 };
 
-// 오늘 날짜 구하기
+// 오늘 날짜 구하기 (초기화 기준)
 const getTodayString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
-// 🚨 [핵심 해결] DB 침묵 에러 탐지기
-// Supabase가 에러를 뱉으면 화면을 멈추고 정확한 원인을 경고창으로 띄웁니다.
+// DB 침묵 에러 탐지기
 const checkDB = (res) => {
   if (res.error) throw new Error(res.error.message);
   return res;
+};
+
+// 💡 [핵심] 무기 등급별 밸런스 설정 테이블
+const WEAPON_CONFIG = {
+  normal: { baseAtk: 10, gainMin: 2, gainMax: 5, protect: 3, basePrice: 100 },
+  magic: { baseAtk: 25, gainMin: 4, gainMax: 8, protect: 3, basePrice: 300 },
+  rare: { baseAtk: 60, gainMin: 8, gainMax: 15, protect: 3, basePrice: 1000 },
+  epic: { baseAtk: 150, gainMin: 20, gainMax: 40, protect: 2, basePrice: 5000 },
+  legendary: { baseAtk: 400, gainMin: 50, gainMax: 100, protect: 1, basePrice: 20000 }
+};
+
+// 💡 [핵심] 등급 및 레벨별 강화 성공 확률
+const getSuccessRate = (grade, level) => {
+  if (grade === 'legendary') {
+    if (level < 5) return 30;
+    if (level < 9) return 15;
+    return 5;
+  }
+  if (grade === 'epic') {
+    if (level < 5) return 70;
+    if (level < 9) return 40;
+    return 20;
+  }
+  if (grade === 'rare') {
+    if (level < 5) return 90;
+    if (level < 9) return 70;
+    return 50;
+  }
+  // normal, magic
+  if (level < 5) return 100;
+  if (level < 9) return 90;
+  return 80;
 };
 
 export default function GameLobby() {
@@ -98,11 +129,6 @@ export default function GameLobby() {
   };
   const gradeTextColors = { normal: 'text-gray-400', magic: 'text-green-400', rare: 'text-blue-400 font-extrabold', epic: 'text-purple-400 font-extrabold', legendary: 'text-yellow-400 font-extrabold' };
   const getGradeLabel = (grade) => ({ normal: '일반', magic: '마법', rare: '희귀', epic: '에픽', legendary: '전설' }[grade] || '일반');
-  const getSuccessRate = (level) => {
-    if (level >= 12) return 1; if (level >= 11) return 3; if (level >= 10) return 5;
-    if (level >= 9) return 10; if (level >= 8) return 15; if (level >= 7) return 25;
-    if (level >= 6) return 40; if (level >= 5) return 60; if (level >= 4) return 80; return 100;
-  };
   const getAuraEffect = (level) => {
     if (level >= 10) return 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) scale-110';
     if (level >= 7) return 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)) scale-105'; return '';
@@ -239,8 +265,8 @@ export default function GameLobby() {
 
       await supabase.from('game_profiles').upsert([{ id: user, nickname: n, points: 1000, dang: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, enhance_count: 0, duel_count: 10, last_duel_date: getTodayString() }]).then(checkDB);
       
-      const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: 3 };
-      const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: 10, protect_count: 3 };
+      const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: WEAPON_CONFIG['rare'].protect };
+      const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: WEAPON_CONFIG['normal'].baseAtk, protect_count: WEAPON_CONFIG['normal'].protect };
       await supabase.from('weapons').insert([initialMain, initialSub]).then(checkDB);
       
       await loadGameData(user);
@@ -297,9 +323,14 @@ export default function GameLobby() {
     try {
       const rand = Math.random() * 100; let newGrade = 'normal';
       if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
-      const baseAtk = { normal: 10, magic: 25, rare: 60, epic: 150, legendary: 400 }[newGrade];
+      
+      const config = WEAPON_CONFIG[newGrade];
       const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
-      const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
+      const newWeaponData = { 
+        id: generateUUID(), user_id: user, slot_type: 'inventory', 
+        weapon_grade: newGrade, enhancement_level: 0, name: newName, 
+        attack: config.baseAtk, protect_count: config.protect 
+      };
 
       await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - 1 }).eq('id', user).then(checkDB);
       await supabase.from('weapons').insert([newWeaponData]).then(checkDB); 
@@ -324,9 +355,18 @@ export default function GameLobby() {
       const rand = Math.random() * 100; let msg; 
       let updates = { scroll_boxes: scrollBoxes - 1 };
 
-      if (rand <= 20) { msg = '🛡️ 파괴방지 주문서 획득!'; updates.protect_scrolls = protectScrolls + 1; }
-      else if (rand <= 50) { msg = '✨ 축복받은 무기 강화 주문서 획득!'; updates.blessed_scrolls = blessedScrolls + 1; }
-      else { msg = '📜 무기 강화 주문서 획득!'; updates.normal_scrolls = normalScrolls + 1; }
+      if (rand <= 10) { 
+        msg = '🛡️ [귀한] 파괴방지 주문서 획득!'; 
+        updates.protect_scrolls = protectScrolls + 1; 
+      }
+      else if (rand <= 30) { 
+        msg = '✨ [희귀] 축복받은 무기 강화 주문서 획득!'; 
+        updates.blessed_scrolls = blessedScrolls + 1; 
+      }
+      else { 
+        msg = '📜 무기 강화 주문서 획득!'; 
+        updates.normal_scrolls = normalScrolls + 1; 
+      }
       
       await supabase.from('game_profiles').update(updates).eq('id', user).then(checkDB);
       
@@ -355,8 +395,10 @@ export default function GameLobby() {
 
   const handleSell = async () => {
     if (isProcessing) return;
-    const basePrice = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[selectedInvItem.weapon_grade];
-    const sellPrice = basePrice + (selectedInvItem.enhancement_level * 500);
+    
+    const basePrice = WEAPON_CONFIG[selectedInvItem.weapon_grade].basePrice;
+    const sellPrice = Math.floor(basePrice * Math.pow((selectedInvItem.enhancement_level * 0.2 + 1), 2));
+    
     if(!window.confirm(`${selectedInvItem.name}을(를) 판매하시겠습니까?\n판매 시 복구 불가하며 ${sellPrice.toLocaleString()} 댕을 획득합니다.`)) return;
     
     setIsProcessing(true);
@@ -381,8 +423,8 @@ export default function GameLobby() {
       const idsToDelete = itemsToSell.map(w => w.id);
 
       itemsToSell.forEach(item => {
-        const base = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[item.weapon_grade];
-        totalGain += (base + (item.enhancement_level * 500));
+        const base = WEAPON_CONFIG[item.weapon_grade].basePrice;
+        totalGain += Math.floor(base * Math.pow((item.enhancement_level * 0.2 + 1), 2));
       });
 
       await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
@@ -428,21 +470,36 @@ export default function GameLobby() {
     
     setTimeout(async () => {
       try {
-        const rate = getSuccessRate(targetWeapon.enhancement_level); 
+        const rate = getSuccessRate(targetWeapon.weapon_grade, targetWeapon.enhancement_level); 
         const isSuccess = (Math.random() * 100) < rate;
         let resultMsg = '';
         
         if (isSuccess) {
           const plus = selectedScrollType === 'blessed' ? Math.floor(Math.random() * 3) + 1 : 1;
-          let newLvl = targetWeapon.enhancement_level + plus; 
-          let totalAddedAtk = 0; let min = 10, max = 20; 
-          for(let i=0; i<plus; i++) {
-              if(targetWeapon.weapon_grade === 'magic') { min=20; max=35; } else if(targetWeapon.weapon_grade === 'rare') { min=35; max=55; } else if(targetWeapon.weapon_grade === 'epic') { min=60; max=90; } else if(targetWeapon.weapon_grade === 'legendary') { min=100; max=150; }
-              totalAddedAtk += Math.floor(Math.random() * (max - min + 1)) + min;
-          }
-          resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${totalAddedAtk}] 상승했습니다!\n(증가폭: ${min} ~ ${max} 중 랜덤)`;
+          const newLvl = targetWeapon.enhancement_level + plus; 
           
-          await supabase.from('weapons').update({ enhancement_level: newLvl, attack: targetWeapon.attack + totalAddedAtk }).eq('id', targetWeapon.id).then(checkDB);
+          const config = WEAPON_CONFIG[targetWeapon.weapon_grade];
+          let totalBaseGain = 0;
+          for(let i=0; i<plus; i++) {
+            totalBaseGain += Math.floor(Math.random() * (config.gainMax - config.gainMin + 1)) + config.gainMin;
+          }
+
+          let randomBonus = 0;
+          let bonusMsg = '';
+          if (newLvl >= 10) {
+            randomBonus = Math.floor(Math.random() * 100) + 1;
+            if (selectedScrollType === 'blessed') {
+              randomBonus *= 2; 
+            }
+            bonusMsg = `\n(✨ 10강 한계돌파 보너스 +${randomBonus})`;
+          }
+
+          const addedAtk = totalBaseGain + randomBonus;
+          const newAtk = targetWeapon.attack + addedAtk;
+
+          resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${addedAtk}] 상승했습니다!${bonusMsg}`;
+          
+          await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id).then(checkDB);
           await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1 }).eq('id', user).then(checkDB);
         } else {
           if (isProtecting) {
@@ -526,20 +583,20 @@ export default function GameLobby() {
             </div>
             
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
-              <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>{mainWeapon ? `+${mainWeapon.enhancement_level} ${mainWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-1 bg-gray-950 px-1.5 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {mainWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1.5 py-1 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectMain} disabled={isProcessing} onChange={(e) => setUseProtectMain(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainWeapon?.protect_count || 0} / 3</span></p></div></div>
+              <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>{mainWeapon ? `+${mainWeapon.enhancement_level} ${mainWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-1 bg-gray-950 px-1.5 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {mainWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1.5 py-1 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectMain} disabled={isProcessing} onChange={(e) => setUseProtectMain(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainWeapon?.protect_count || 0} / {mainWeapon ? WEAPON_CONFIG[mainWeapon.weapon_grade].protect : 3}</span></p></div></div>
               <div className="flex-1 flex justify-center items-center py-1"><div className={`text-5xl md:text-6xl ${mainWeapon ? getAuraEffect(mainWeapon.enhancement_level) : ''} ${enhancingSlot === 'main' ? 'animate-pulse scale-125' : ''}`}>{mainWeapon ? '🗡️' : '❌'}</div></div>
               <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
-                {!mainWeapon ? '장착된 무기 없음' : enhancingSlot === 'main' ? '강화 진행 중...' : `[본장비] 강화 시도 (${getSuccessRate(mainWeapon.enhancement_level)}%)`}
+                {!mainWeapon ? '장착된 무기 없음' : enhancingSlot === 'main' ? '강화 진행 중...' : `[본장비] 강화 시도 (${getSuccessRate(mainWeapon.weapon_grade, mainWeapon.enhancement_level)}%)`}
               </button>
             </div>
 
             <div className="flex justify-center -my-2.5 z-20 shrink-0"><button disabled={isProcessing} onClick={handleSwap} className="bg-gray-800 border-2 border-gray-500 text-[9px] font-bold px-3 py-1 rounded-full shadow-2xl active:scale-95 text-white disabled:opacity-50">⬆️ 무기 교체 ⬇️</button></div>
 
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
-              <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>{subWeapon ? `+${subWeapon.enhancement_level} ${subWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-0.5 bg-gray-950 px-1 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {subWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1 py-0.5 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectSub} disabled={isProcessing} onChange={(e) => setUseProtectSub(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subWeapon?.protect_count || 0} / 3</span></p></div></div>
+              <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>{subWeapon ? `+${subWeapon.enhancement_level} ${subWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-0.5 bg-gray-950 px-1 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {subWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1 py-0.5 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectSub} disabled={isProcessing} onChange={(e) => setUseProtectSub(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subWeapon?.protect_count || 0} / {subWeapon ? WEAPON_CONFIG[subWeapon.weapon_grade].protect : 3}</span></p></div></div>
               <div className="flex-1 flex justify-center items-center py-1"><div className={`text-5xl md:text-6xl ${subWeapon ? getAuraEffect(subWeapon.enhancement_level) : ''} ${enhancingSlot === 'sub' ? 'animate-pulse scale-125' : ''}`}>{subWeapon ? '🗡️' : '❌'}</div></div>
               <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
-                {!subWeapon ? '장착된 무기 없음' : enhancingSlot === 'sub' ? '강화 진행 중...' : `[서브장비] 강화 시도 (${getSuccessRate(subWeapon.enhancement_level)}%)`}
+                {!subWeapon ? '장착된 무기 없음' : enhancingSlot === 'sub' ? '강화 진행 중...' : `[서브장비] 강화 시도 (${getSuccessRate(subWeapon.weapon_grade, subWeapon.enhancement_level)}%)`}
               </button>
             </div>
           </div>
@@ -684,8 +741,8 @@ export default function GameLobby() {
                <p className="text-xs text-gray-400 mb-1">예상 획득 댕</p>
                <p className="text-xl font-black text-yellow-500">
                  {inventory.filter(w => sellGrades[w.weapon_grade]).reduce((sum, item) => {
-                    const base = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[item.weapon_grade];
-                    return sum + (base + (item.enhancement_level * 500));
+                    const base = WEAPON_CONFIG[item.weapon_grade].basePrice;
+                    return sum + Math.floor(base * Math.pow((item.enhancement_level * 0.2 + 1), 2));
                  }, 0).toLocaleString()} 댕
                </p>
             </div>
