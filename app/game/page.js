@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // 💡 욕설 및 금지어 필터
 const FORBIDDEN_WORDS = ['씨발', '개새끼', '존나', '창년', '병신', '개자식', '미친', '운영자', '관리자'];
 
-// 고유 ID 생성기
+// 💡 고유 ID 생성기
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -65,7 +65,11 @@ export default function GameLobby() {
   // 다중 판매(일괄 판매) 상태
   const [isMultiSellModalOpen, setIsMultiSellModalOpen] = useState(false);
   const [sellGrades, setSellGrades] = useState({
-    normal: true, magic: true, rare: false, epic: false, legendary: false
+    normal: true,
+    magic: true,
+    rare: false,
+    epic: false,
+    legendary: false
   });
 
   // DB 갱신 동기화 트리거
@@ -158,6 +162,7 @@ export default function GameLobby() {
             const { data: allMainWeapons } = await supabase.from('weapons').select('*').eq('slot_type', 'main');
 
             const rankData = profiles.map(p => {
+              // 내 캐릭터는 DB 지연 무시하고 화면의 최신 정보 강제 적용
               if (p.id === user) {
                 return { 
                   ...p, points: points, enhance_count: enhanceCount, 
@@ -259,6 +264,7 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
+  // 💡 [해결] 상점 구매 로직: 구매 후 수량 초기화 100% 보장
   const handleBuyBox = async (type, baseCost, qty) => {
     if (isProcessing) return;
     const totalCost = baseCost * qty;
@@ -274,15 +280,20 @@ export default function GameLobby() {
       if (type === 'weapon') { 
         setWeaponBoxes(prev => prev + qty); 
         updates.weapon_boxes = weaponBoxes + qty; 
-        setBuyQtyWeapon(1); 
       } else { 
         setScrollBoxes(prev => prev + qty); 
         updates.scroll_boxes = scrollBoxes + qty; 
-        setBuyQtyScroll(1); 
       }
       
       await supabase.from('game_profiles').update(updates).eq('id', user);
       await loadGameData(user); 
+      
+      // 💡 데이터가 불러와진 직후 수량을 강제로 1로 초기화합니다!
+      if (type === 'weapon') {
+        setBuyQtyWeapon(1);
+      } else {
+        setBuyQtyScroll(1);
+      }
     } finally { setIsProcessing(false); }
   };
 
@@ -570,7 +581,7 @@ export default function GameLobby() {
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
               <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>{mainWeapon ? `+${mainWeapon.enhancement_level} ${mainWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-1 bg-gray-950 px-1.5 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {mainWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1.5 py-1 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectMain} disabled={isProcessing} onChange={(e) => setUseProtectMain(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainWeapon?.protect_count || 0} / 3</span></p></div></div>
               <div className="flex-1 flex justify-center items-center py-1"><div className={`text-5xl md:text-6xl ${mainWeapon ? getAuraEffect(mainWeapon.enhancement_level) : ''} ${enhancingSlot === 'main' ? 'animate-pulse scale-125' : ''}`}>{mainWeapon ? '🗡️' : '❌'}</div></div>
-              <button onClick={() => clickEnhance('main')} disabled={isProcessing || !mainWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
+              <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
                 {!mainWeapon ? '장착된 무기 없음' : enhancingSlot === 'main' ? '강화 진행 중...' : `[본장비] 강화 시도 (${getSuccessRate(mainWeapon.enhancement_level)}%)`}
               </button>
             </div>
@@ -580,7 +591,7 @@ export default function GameLobby() {
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
               <div className="flex justify-between items-start shrink-0"><div className="flex flex-col"><span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span><h3 className={`text-xs font-black ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>{subWeapon ? `+${subWeapon.enhancement_level} ${subWeapon.name}` : '무기를 장착하세요'}</h3><div className="mt-0.5 bg-gray-950 px-1 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {subWeapon?.attack?.toLocaleString() || 0}</p></div></div><div className="text-right flex flex-col items-end"><label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1 py-0.5 rounded border border-gray-700 cursor-pointer"><input type="checkbox" checked={useProtectSub} disabled={isProcessing} onChange={(e) => setUseProtectSub(e.target.checked)} className="w-3 h-3 accent-blue-500" /><span>파괴방지 적용</span></label><p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subWeapon?.protect_count || 0} / 3</span></p></div></div>
               <div className="flex-1 flex justify-center items-center py-1"><div className={`text-5xl md:text-6xl ${subWeapon ? getAuraEffect(subWeapon.enhancement_level) : ''} ${enhancingSlot === 'sub' ? 'animate-pulse scale-125' : ''}`}>{subWeapon ? '🗡️' : '❌'}</div></div>
-              <button onClick={() => clickEnhance('sub')} disabled={isProcessing || !subWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
+              <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
                 {!subWeapon ? '장착된 무기 없음' : enhancingSlot === 'sub' ? '강화 진행 중...' : `[서브장비] 강화 시도 (${getSuccessRate(subWeapon.enhancement_level)}%)`}
               </button>
             </div>
