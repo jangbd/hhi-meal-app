@@ -19,10 +19,16 @@ const generateUUID = () => {
   });
 };
 
-// 오늘 날짜 구하기 (초기화 기준)
+// 오늘 날짜 구하기 (일일 초기화 기준)
 const getTodayString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+// 💡 이번 달 구하기 (월간 초기화 기준)
+const getCurrentMonthString = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
 // DB 침묵 에러 탐지기
@@ -31,7 +37,7 @@ const checkDB = (res) => {
   return res;
 };
 
-// 💡 [핵심] 무기 등급별 밸런스 설정 테이블
+// 무기 등급별 밸런스 설정 테이블
 const WEAPON_CONFIG = {
   normal: { baseAtk: 10, gainMin: 2, gainMax: 5, protect: 3, basePrice: 100 },
   magic: { baseAtk: 25, gainMin: 4, gainMax: 8, protect: 3, basePrice: 300 },
@@ -40,7 +46,7 @@ const WEAPON_CONFIG = {
   legendary: { baseAtk: 400, gainMin: 50, gainMax: 100, protect: 1, basePrice: 20000 }
 };
 
-// 💡 [핵심] 등급 및 레벨별 강화 성공 확률
+// 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
   if (grade === 'legendary') {
     if (level < 5) return 30;
@@ -57,7 +63,6 @@ const getSuccessRate = (grade, level) => {
     if (level < 9) return 70;
     return 50;
   }
-  // normal, magic
   if (level < 5) return 100;
   if (level < 9) return 90;
   return 80;
@@ -73,8 +78,6 @@ export default function GameLobby() {
   const [showIntro, setShowIntro] = useState(false);
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
-  
-  // 처리 중 중복 클릭 방지 락(Lock)
   const [isProcessing, setIsProcessing] = useState(false);
   
   // 재화 및 점수
@@ -107,7 +110,6 @@ export default function GameLobby() {
   const [buyQtyWeapon, setBuyQtyWeapon] = useState(1);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
 
-  // 다중 판매 상태
   const [isMultiSellModalOpen, setIsMultiSellModalOpen] = useState(false);
   const [sellGrades, setSellGrades] = useState({
     normal: true, magic: true, rare: false, epic: false, legendary: false
@@ -140,11 +142,48 @@ export default function GameLobby() {
       if (profileErr) throw profileErr;
       if (!profile) { setShowIntro(true); setLoading(false); return; }
 
+      // 💡 [추가] 월간 랭킹 보상 및 기본 댕 지급 로직
+      const currentMonth = getCurrentMonthString();
+      let lastMonth = profile.last_reward_month;
+
+      if (lastMonth !== currentMonth) {
+        // 보상을 주기 위해 전체 결투 포인트 랭킹 조회
+        const { data: allProfiles } = await supabase.from('game_profiles').select('id, points');
+        let rankReward = 2000; // 기본 참여상
+        let myRank = "순위 외";
+
+        if (allProfiles) {
+          allProfiles.sort((a, b) => (b.points || 0) - (a.points || 0));
+          const rankIndex = allProfiles.findIndex(p => p.id === userId);
+          if (rankIndex !== -1) {
+            myRank = rankIndex + 1;
+            if (myRank === 1) rankReward = 50000;
+            else if (myRank === 2) rankReward = 30000;
+            else if (myRank === 3) rankReward = 20000;
+            else if (myRank <= 10) rankReward = 10000;
+            else if (myRank <= 50) rankReward = 5000;
+          }
+        }
+
+        const monthlyBasicReward = 10000; // 월초 기본 1만 댕
+        const totalReward = monthlyBasicReward + rankReward;
+        const newDang = (profile.dang || 0) + totalReward;
+
+        await supabase.from('game_profiles').update({ 
+          dang: newDang, 
+          last_reward_month: currentMonth 
+        }).eq('id', userId).then(checkDB);
+        
+        profile.dang = newDang; // UI 즉시 반영
+        setTimeout(() => {
+          alert(`🎉 [월간 시즌 보상 도착]\n\n새로운 달이 시작되었습니다!\n- 기본 접속 보상: ${monthlyBasicReward.toLocaleString()} 댕\n- 지난 시즌 랭킹(${myRank}위) 보상: ${rankReward.toLocaleString()} 댕\n\n총 ${totalReward.toLocaleString()} 댕이 지급되었습니다! 이번 달도 화이팅!`);
+        }, 500);
+      }
+
+      // 일일 결투 횟수 리셋
       const today = getTodayString();
       let currentDuelCount = profile.duel_count ?? 10;
-      let lastDuelDate = profile.last_duel_date;
-
-      if (lastDuelDate !== today) {
+      if (profile.last_duel_date !== today) {
         currentDuelCount = 10;
         await supabase.from('game_profiles').update({ duel_count: 10, last_duel_date: today }).eq('id', userId).then(checkDB);
       }
@@ -252,6 +291,7 @@ export default function GameLobby() {
     }, 2000); 
   };
 
+  // 💡 [변경] 초기 가입 보상 조정 (1만 댕 + 일반2, 마법1)
   const handleStartNewGame = async () => { 
     if (isProcessing) return;
     const n = tempNickname.trim();
@@ -263,11 +303,21 @@ export default function GameLobby() {
       const { data: exist } = await supabase.from('game_profiles').select('id').eq('nickname', n).maybeSingle();
       if (exist) { alert("이미 사용 중인 닉네임입니다."); return; }
 
-      await supabase.from('game_profiles').upsert([{ id: user, nickname: n, points: 1000, dang: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, enhance_count: 0, duel_count: 10, last_duel_date: getTodayString() }]).then(checkDB);
+      await supabase.from('game_profiles').upsert([{ 
+        id: user, nickname: n, points: 1000, 
+        dang: 10000, // 💡 초기 1만 댕 지급
+        weapon_boxes: 1, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 2, protect_scrolls: 1, 
+        enhance_count: 0, duel_count: 10, 
+        last_duel_date: getTodayString(),
+        last_reward_month: getCurrentMonthString() // 💡 이번 달 보상은 이미 받은 것으로 세팅
+      }]).then(checkDB);
       
-      const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: WEAPON_CONFIG['rare'].protect };
-      const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: WEAPON_CONFIG['normal'].baseAtk, protect_count: WEAPON_CONFIG['normal'].protect };
-      await supabase.from('weapons').insert([initialMain, initialSub]).then(checkDB);
+      // 💡 마법 1개, 일반 2개 지급 세팅
+      const magicWeapon = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'magic', enhancement_level: 0, name: '초보자의 롱소드', attack: WEAPON_CONFIG['magic'].baseAtk, protect_count: WEAPON_CONFIG['magic'].protect };
+      const normalWeapon1 = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: WEAPON_CONFIG['normal'].baseAtk, protect_count: WEAPON_CONFIG['normal'].protect };
+      const normalWeapon2 = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: WEAPON_CONFIG['normal'].baseAtk, protect_count: WEAPON_CONFIG['normal'].protect };
+      
+      await supabase.from('weapons').insert([magicWeapon, normalWeapon1, normalWeapon2]).then(checkDB);
       
       await loadGameData(user);
     } catch (err) {
@@ -536,7 +586,7 @@ export default function GameLobby() {
       <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center shadow-xl">
         <h2 className="text-gray-300 text-xs font-bold mb-3">닉네임을 입력하세요</h2>
         <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} maxLength={10} className="w-full bg-gray-950 border-2 border-gray-700 rounded-xl p-4 text-center text-white font-black text-lg mb-6 focus:border-yellow-500 outline-none transition-colors" placeholder="예: 무기장인" />
-        <button onClick={handleStartNewGame} disabled={isProcessing} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-sm shadow-md transition-colors disabled:opacity-50">대장간 입장하기 (100만 댕 지급)</button>
+        <button onClick={handleStartNewGame} disabled={isProcessing} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-sm shadow-md transition-colors disabled:opacity-50">대장간 입장하기 (1만 댕 + 무기 3종 지급)</button>
       </div>
     </div>
   );
