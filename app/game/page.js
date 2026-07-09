@@ -48,24 +48,10 @@ const WEAPON_CONFIG = {
 
 // 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
-  if (grade === 'legendary') {
-    if (level < 5) return 30;
-    if (level < 9) return 15;
-    return 5;
-  }
-  if (grade === 'epic') {
-    if (level < 5) return 70;
-    if (level < 9) return 40;
-    return 20;
-  }
-  if (grade === 'rare') {
-    if (level < 5) return 90;
-    if (level < 9) return 70;
-    return 50;
-  }
-  if (level < 5) return 100;
-  if (level < 9) return 90;
-  return 80;
+  if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
+  if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
+  if (grade === 'rare') return level < 5 ? 90 : level < 9 ? 70 : 50;
+  return level < 5 ? 100 : level < 9 ? 90 : level < 15 ? 60 : 30;
 };
 
 // 💡 [핵심] 재테크용 판매 금액 계산 공식 (기하급수적 상승)
@@ -484,7 +470,6 @@ export default function GameLobby() {
     } catch(err) { alert("무기 교체 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
-  // 💡 [핵심] 강화 및 방어 횟수 차감 로직 수정
   const executeEnhance = async (slot) => { 
     if (isProcessing) return;
     setIsProcessing(true); setWarningTarget(null); setEnhancingSlot(slot);
@@ -492,12 +477,10 @@ export default function GameLobby() {
     const targetWeapon = slot === 'main' ? mainWeapon : subWeapon;
     const isProtecting = slot === 'main' ? useProtectMain : useProtectSub;
     
-    // DB의 최대 보호 한도 내에서 횟수 검증 (시각적 버그 방지)
     const maxProtect = WEAPON_CONFIG[targetWeapon.weapon_grade].protect;
     const currentProtect = Math.min(targetWeapon.protect_count, maxProtect);
     
-    // 🔥 파괴 방지 체크 시 성공 여부와 무관하게 방어 횟수 무조건 1 차감
-    const nextProtectCount = isProtecting ? currentProtect - 1 : currentProtect;
+    const nextProtectCount = isProtecting ? Math.max(0, currentProtect - 1) : currentProtect;
 
     let pUpdates = {};
     if (selectedScrollType === 'normal') { pUpdates.normal_scrolls = normalScrolls - 1; } 
@@ -541,7 +524,6 @@ export default function GameLobby() {
 
           resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${addedAtk}] 상승했습니다!${bonusMsg}`;
           
-          // 성공해도 파괴방지를 썼다면 nextProtectCount가 1 깎인 상태로 저장됨
           await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk, protect_count: nextProtectCount }).eq('id', targetWeapon.id).then(checkDB);
           await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1 }).eq('id', user).then(checkDB);
         } else {
@@ -568,7 +550,6 @@ export default function GameLobby() {
     if (!hasScroll) return alert('선택한 주문서가 부족합니다!');
     const isProtecting = slot === 'main' ? useProtectMain : useProtectSub;
     
-    // 방어 횟수 제한 체크 로직 수정
     const maxProtect = WEAPON_CONFIG[targetWeapon.weapon_grade].protect;
     const currentProtect = Math.min(targetWeapon.protect_count, maxProtect);
     
@@ -578,7 +559,6 @@ export default function GameLobby() {
     if (slot === 'main') setWarningTarget('main'); else executeEnhance('sub');
   };
 
-  // UI용 파괴방지 횟수 시각적 제한 계산
   const mainMaxProtect = mainWeapon ? WEAPON_CONFIG[mainWeapon.weapon_grade].protect : 3;
   const mainCurrentProtect = mainWeapon ? Math.min(mainWeapon.protect_count, mainMaxProtect) : 0;
   
@@ -616,7 +596,6 @@ export default function GameLobby() {
       <div className="bg-gray-800 px-3 py-1.5 flex justify-between items-center shrink-0 shadow-md">
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-1 mb-0.5">
-            {/* 💡 [변경] 닉네임 수정 불가를 위해 단순 텍스트로 변경 */}
             <span className="text-[12px] font-black text-white truncate max-w-[100px]">{nickname}</span>
           </div>
           <div className="flex items-center gap-2">
