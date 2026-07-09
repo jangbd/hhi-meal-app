@@ -48,13 +48,27 @@ const WEAPON_CONFIG = {
 
 // 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
-  if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
-  if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
-  if (grade === 'rare') return level < 5 ? 90 : level < 9 ? 70 : 50;
-  return level < 5 ? 100 : level < 9 ? 90 : level < 15 ? 60 : 30;
+  if (grade === 'legendary') {
+    if (level < 5) return 30;
+    if (level < 9) return 15;
+    return 5;
+  }
+  if (grade === 'epic') {
+    if (level < 5) return 70;
+    if (level < 9) return 40;
+    return 20;
+  }
+  if (grade === 'rare') {
+    if (level < 5) return 90;
+    if (level < 9) return 70;
+    return 50;
+  }
+  if (level < 5) return 100;
+  if (level < 9) return 90;
+  return 80;
 };
 
-// 💡 [핵심] 재테크용 판매 금액 계산 공식 (기하급수적 상승)
+// 재테크용 판매 금액 계산 공식 (기하급수적 상승)
 const calculateSellPrice = (grade, level) => {
   const base = WEAPON_CONFIG[grade].basePrice;
   return Math.floor(base * Math.pow((level * 0.4 + 1), 2.5)) + (level * 500);
@@ -334,10 +348,11 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
+  // 1개 열기 (무기)
   const handleOpenWeaponBox = async () => {
     if (isProcessing) return;
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
-    if (inventory.length >= 10) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
+    if (inventory.length >= 20) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
     
     setIsProcessing(true); setActiveGacha('weapon');
     
@@ -366,6 +381,67 @@ export default function GameLobby() {
     }
   };
 
+  // 💡 [신규] 무기 상자 모두 열기 (여유 공간만큼만)
+  const handleOpenAllWeaponBoxes = async () => {
+    if (isProcessing) return;
+    if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
+    const availableSlots = 20 - inventory.length;
+    if (availableSlots <= 0) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
+
+    setIsProcessing(true); setActiveGacha('weapon');
+
+    try {
+      // 보유한 상자와 빈칸 중 더 작은 수만큼 개봉
+      const openCount = Math.min(weaponBoxes, availableSlots);
+      const newWeapons = [];
+      const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
+
+      for (let i = 0; i < openCount; i++) {
+        const rand = Math.random() * 100;
+        let newGrade = 'normal';
+        if (rand <= 0.1) newGrade = 'legendary'; 
+        else if (rand <= 1.1) newGrade = 'epic'; 
+        else if (rand <= 6.1) newGrade = 'rare'; 
+        else if (rand <= 21.1) newGrade = 'magic';
+
+        resultCounts[newGrade]++;
+
+        const config = WEAPON_CONFIG[newGrade];
+        const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
+
+        newWeapons.push({
+          id: generateUUID(),
+          user_id: user,
+          slot_type: 'inventory',
+          weapon_grade: newGrade,
+          enhancement_level: 0,
+          name: newName,
+          attack: config.baseAtk,
+          protect_count: config.protect
+        });
+      }
+
+      await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - openCount }).eq('id', user).then(checkDB);
+      await supabase.from('weapons').insert(newWeapons).then(checkDB);
+
+      setTimeout(async () => {
+        let msg = `⚔️ 상자 ${openCount}개 개봉 완료!\n\n`;
+        if (resultCounts.legendary) msg += `🟨 전설: ${resultCounts.legendary}개\n`;
+        if (resultCounts.epic) msg += `🟪 에픽: ${resultCounts.epic}개\n`;
+        if (resultCounts.rare) msg += `🟦 희귀: ${resultCounts.rare}개\n`;
+        if (resultCounts.magic) msg += `🟩 마법: ${resultCounts.magic}개\n`;
+        if (resultCounts.normal) msg += `⬜ 일반: ${resultCounts.normal}개\n`;
+
+        setPopupMsg(msg);
+        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+      }, 1000);
+    } catch (err) {
+      alert("무기 일괄 개봉 오류: " + err.message);
+      setActiveGacha(null); setIsProcessing(false);
+    }
+  };
+
+  // 1개 열기 (주문서)
   const handleOpenScrollBox = async () => {
     if (isProcessing) return;
     if (scrollBoxes <= 0) return alert('주문서 상자가 없습니다!');
@@ -396,6 +472,42 @@ export default function GameLobby() {
       }, 500);
     } catch(err) {
       alert("주문서 뽑기 오류: " + err.message);
+      setActiveGacha(null); setIsProcessing(false);
+    }
+  };
+
+  // 💡 [신규] 주문서 상자 모두 열기
+  const handleOpenAllScrollBoxes = async () => {
+    if (isProcessing) return;
+    if (scrollBoxes <= 0) return alert('주문서 상자가 없습니다!');
+
+    setIsProcessing(true); setActiveGacha('scroll');
+
+    try {
+      let addedNormal = 0;
+      let addedBlessed = 0;
+      let addedProtect = 0;
+
+      for (let i = 0; i < scrollBoxes; i++) {
+        const rand = Math.random() * 100;
+        if (rand <= 10) addedProtect++;
+        else if (rand <= 30) addedBlessed++;
+        else addedNormal++;
+      }
+
+      await supabase.from('game_profiles').update({
+        scroll_boxes: 0,
+        protect_scrolls: protectScrolls + addedProtect,
+        blessed_scrolls: blessedScrolls + addedBlessed,
+        normal_scrolls: normalScrolls + addedNormal
+      }).eq('id', user).then(checkDB);
+
+      setTimeout(async () => {
+        setPopupMsg(`📦 상자 ${scrollBoxes}개 개봉 완료!\n\n🛡️ 파괴방지: ${addedProtect}개\n✨ 축복주문서: ${addedBlessed}개\n📜 일반주문서: ${addedNormal}개`);
+        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+      }, 800);
+    } catch (err) {
+      alert("주문서 일괄 개봉 오류: " + err.message);
       setActiveGacha(null); setIsProcessing(false);
     }
   };
@@ -584,7 +696,7 @@ export default function GameLobby() {
       {isProcessing && (
         <div className="fixed inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
            <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">
-             🔄 서버와 동기화 중입니다... 잠시만 기다려주세요.
+             🔄 서버와 동기화 중... 잠시만 기다려주세요.
            </span>
         </div>
       )}
@@ -668,11 +780,11 @@ export default function GameLobby() {
           <div className="flex flex-col gap-4 pb-4">
             <div>
               <div className="flex justify-between items-center mb-2 px-2">
-                  <h2 className="text-xs font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/10)</h2>
+                  <h2 className="text-xs font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
                   <button onClick={() => setIsMultiSellModalOpen(true)} disabled={isProcessing} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50">일괄 판매 🗑️</button>
               </div>
               <div className="grid grid-cols-5 gap-2 px-2">
-                {Array(10).fill(0).map((_, i) => {
+                {Array(20).fill(0).map((_, i) => {
                   const item = inventory[i];
                   if (item) {
                       return (
@@ -706,9 +818,16 @@ export default function GameLobby() {
               </div>
             </div>
             
-            <div className="flex gap-2 px-2 mt-2">
-              <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null} className="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white py-4 rounded-xl text-xs font-black shadow-md disabled:opacity-50">📦 주문서 상자 열기 ({scrollBoxes})</button>
-              <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null} className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-4 rounded-xl text-xs font-black shadow-md disabled:opacity-50">⚔️ 무기 상자 열기 ({weaponBoxes})</button>
+            {/* 💡 [변경] 한 번에 열기 기능 UI 추가 */}
+            <div className="flex flex-col gap-2 px-2 mt-2">
+              <div className="flex gap-2">
+                <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-black shadow-md disabled:opacity-50">📜 주문서 1개 열기</button>
+                <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-xs font-black shadow-md disabled:opacity-50">📦 주문서 모두 열기 ({scrollBoxes})</button>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-3 rounded-xl text-xs font-black shadow-md disabled:opacity-50">🗡️ 무기 1개 열기</button>
+                <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-xs font-black shadow-md disabled:opacity-50">⚔️ 무기 모두 열기 ({weaponBoxes})</button>
+              </div>
             </div>
           </div>
         )}
