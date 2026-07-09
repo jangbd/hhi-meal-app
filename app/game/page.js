@@ -19,10 +19,17 @@ const generateUUID = () => {
   });
 };
 
-// 💡 오늘 날짜 구하기 (초기화 기준)
+// 오늘 날짜 구하기
 const getTodayString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+// 🚨 [핵심 해결] DB 침묵 에러 탐지기
+// Supabase가 에러를 뱉으면 화면을 멈추고 정확한 원인을 경고창으로 띄웁니다.
+const checkDB = (res) => {
+  if (res.error) throw new Error(res.error.message);
+  return res;
 };
 
 export default function GameLobby() {
@@ -36,15 +43,13 @@ export default function GameLobby() {
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   
-  // 💡 [핵심 방어 시스템] 처리 중 중복 클릭 방지 락(Lock)
+  // 처리 중 중복 클릭 방지 락(Lock)
   const [isProcessing, setIsProcessing] = useState(false);
   
   // 재화 및 점수
   const [points, setPoints] = useState(0); 
   const [dang, setDang] = useState(0); 
   const [enhanceCount, setEnhanceCount] = useState(0);
-  
-  // 💡 일일 결투 횟수 상태 추가
   const [duelCount, setDuelCount] = useState(10);
 
   // 아이템 보유량
@@ -59,7 +64,7 @@ export default function GameLobby() {
   const [subWeapon, setSubWeapon] = useState(null);
   const [inventory, setInventory] = useState([]); 
 
-  // 게임 진행 상호작용 상태
+  // 게임 진행 상태
   const [enhancingSlot, setEnhancingSlot] = useState(null);
   const [activeGacha, setActiveGacha] = useState(null); 
   const [popupMsg, setPopupMsg] = useState(null);
@@ -71,16 +76,13 @@ export default function GameLobby() {
   const [buyQtyWeapon, setBuyQtyWeapon] = useState(1);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
 
-  // 다중 판매(일괄 판매) 상태
+  // 다중 판매 상태
   const [isMultiSellModalOpen, setIsMultiSellModalOpen] = useState(false);
   const [sellGrades, setSellGrades] = useState({
     normal: true, magic: true, rare: false, epic: false, legendary: false
   });
 
-  // DB 갱신 동기화 트리거
   const [syncTrigger, setSyncTrigger] = useState(0);
-
-  // 투기장(랭킹) 상태
   const [rankType, setRankType] = useState('attack');
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingRank, setLoadingRank] = useState(false);
@@ -106,28 +108,26 @@ export default function GameLobby() {
     if (level >= 7) return 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)) scale-105'; return '';
   };
 
-  // 💡 데이터 로딩 (모든 정보 DB에서 불러오기 + 일일 결투 횟수 리셋 로직)
   const loadGameData = useCallback(async (userId) => {
     try {
       let { data: profile, error: profileErr } = await supabase.from('game_profiles').select('*').eq('id', userId).maybeSingle();
       if (profileErr) throw profileErr;
       if (!profile) { setShowIntro(true); setLoading(false); return; }
 
-      // 💡 결투 횟수 초기화 체크
       const today = getTodayString();
       let currentDuelCount = profile.duel_count ?? 10;
       let lastDuelDate = profile.last_duel_date;
 
       if (lastDuelDate !== today) {
         currentDuelCount = 10;
-        await supabase.from('game_profiles').update({ duel_count: 10, last_duel_date: today }).eq('id', userId);
+        await supabase.from('game_profiles').update({ duel_count: 10, last_duel_date: today }).eq('id', userId).then(checkDB);
       }
 
       setNickname(profile.nickname || '이름없음'); 
       setPoints(profile.points || 0); 
       setDang(profile.dang || 0); 
       setEnhanceCount(profile.enhance_count || 0); 
-      setDuelCount(currentDuelCount); // 횟수 세팅
+      setDuelCount(currentDuelCount); 
       setWeaponBoxes(profile.weapon_boxes || 0); 
       setScrollBoxes(profile.scroll_boxes || 0);
       setNormalScrolls(profile.normal_scrolls || 0); 
@@ -143,7 +143,7 @@ export default function GameLobby() {
       
       setShowIntro(false); 
       setLoading(false);
-      setSyncTrigger(prev => prev + 1); // 랭킹 업데이트 트리거
+      setSyncTrigger(prev => prev + 1); 
     } catch (error) { setLoadError(error.message); }
   }, []);
 
@@ -160,30 +160,20 @@ export default function GameLobby() {
     initApp();
   }, [loadGameData]);
 
-  // 투기장 랭킹 로직
   useEffect(() => {
     if (activeTab === 'arena') {
       const fetchRank = async () => {
         setLoadingRank(true);
         try {
           const { data: profiles, error: pErr } = await supabase.from('game_profiles').select('*').limit(50);
-          
-          if (pErr) {
-            console.error("랭킹 로드 에러:", pErr);
-            setLoadingRank(false);
-            return;
-          }
+          if (pErr) return setLoadingRank(false);
             
           if (profiles && profiles.length > 0) {
             const { data: allMainWeapons } = await supabase.from('weapons').select('*').eq('slot_type', 'main');
 
             const rankData = profiles.map(p => {
-              // 내 캐릭터는 DB 지연 무시하고 화면의 최신 정보 강제 적용
               if (p.id === user) {
-                return { 
-                  ...p, points: points, enhance_count: enhanceCount, 
-                  mainWeapon: mainWeapon || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
-                };
+                return { ...p, points: points, enhance_count: enhanceCount, mainWeapon: mainWeapon || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
               }
               const main = (allMainWeapons || []).find(w => w.user_id === p.id);
               return { ...p, mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
@@ -194,7 +184,6 @@ export default function GameLobby() {
               if (rankType === 'enhance') return (b.enhance_count || 0) - (a.enhance_count || 0);
               return b.points - a.points; 
             });
-            
             setLeaderboard(rankData.slice(0, 10)); 
           } else { setLeaderboard([]); }
         } catch (e) { console.error(e); }
@@ -204,75 +193,59 @@ export default function GameLobby() {
     }
   }, [activeTab, rankType, syncTrigger, mainWeapon, points, user, enhanceCount]); 
 
-  // 💡 결투 시작 (횟수 차감 및 제한 로직 추가)
   const handleDuel = async (target) => {
     if (isProcessing) return;
-    
-    if (duelCount <= 0) {
-      return alert('⚠️ 오늘의 결투 횟수(10회)를 모두 소진했습니다!\n(광고 보고 횟수 충전하기 기능은 추후 업데이트 예정입니다)');
-    }
-
+    if (duelCount <= 0) return alert('⚠️ 오늘의 결투 횟수(10회)를 모두 소진했습니다!');
     const myAtk = (mainWeapon?.attack || 0) + (subWeapon?.attack || 0);
-    if (myAtk === 0) return alert('장착된 무기가 없습니다! 무기를 먼저 장착하고 도전하세요.');
+    if (myAtk === 0) return alert('장착된 무기가 없습니다!');
 
-    setIsProcessing(true);
-    setDuelingTarget(target);
+    setIsProcessing(true); setDuelingTarget(target);
 
     setTimeout(async () => {
       try {
         const myPower = Math.floor(myAtk * (0.8 + Math.random() * 0.4));
-        const targetBaseAtk = target.mainWeapon?.attack || 0;
-        const targetPower = Math.floor(targetBaseAtk * (0.8 + Math.random() * 0.4));
-
-        const nextDuelCount = duelCount - 1; // 횟수 1 차감
-        setDuelCount(nextDuelCount);
+        const targetPower = Math.floor((target.mainWeapon?.attack || 0) * (0.8 + Math.random() * 0.4));
+        const nextDuelCount = duelCount - 1; 
 
         let resultMsg = '';
         if (myPower >= targetPower) {
-          const reward = 50; 
-          const newPoints = points + reward;
-          setPoints(newPoints); 
-          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user); 
-          resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n명예로운 승리로 결투 포인트 ${reward} P를 획득했습니다!\n(남은 결투 횟수: ${nextDuelCount}/10)`;
+          const newPoints = points + 50;
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user).then(checkDB); 
+          resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n결투 포인트 50 P 획득!\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         } else {
-          const penalty = 20; 
-          const newPoints = Math.max(0, points - penalty);
-          setPoints(newPoints); 
-          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user); 
-          resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n패배의 대가로 결투 포인트 ${penalty} P를 잃었습니다... 강해져서 돌아오십시오.\n(남은 결투 횟수: ${nextDuelCount}/10)`;
+          const newPoints = Math.max(0, points - 20);
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user).then(checkDB); 
+          resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n결투 포인트 20 P 상실...\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         }
-        
-        setPopupMsg(resultMsg);
-        await loadGameData(user);
+        setPopupMsg(resultMsg); await loadGameData(user);
+      } catch (err) {
+        alert("결투 기록 실패: " + err.message);
       } finally {
-        setDuelingTarget(null);
-        setIsProcessing(false);
+        setDuelingTarget(null); setIsProcessing(false);
       }
     }, 2000); 
   };
 
   const handleStartNewGame = async () => { 
     if (isProcessing) return;
-    const nicknameTrim = tempNickname.trim();
-    if (!nicknameTrim) return alert("닉네임을 입력해주세요!");
-    if (FORBIDDEN_WORDS.some(word => nicknameTrim.includes(word))) return alert("부적절한 닉네임입니다.");
+    const n = tempNickname.trim();
+    if (!n) return alert("닉네임을 입력해주세요!");
+    if (FORBIDDEN_WORDS.some(w => n.includes(w))) return alert("부적절한 닉네임입니다.");
 
     setIsProcessing(true);
     try {
-      const { data: existingUser } = await supabase.from('game_profiles').select('id').eq('nickname', nicknameTrim).maybeSingle();
-      if (existingUser) { alert("이미 사용 중인 닉네임입니다."); return; }
+      const { data: exist } = await supabase.from('game_profiles').select('id').eq('nickname', n).maybeSingle();
+      if (exist) { alert("이미 사용 중인 닉네임입니다."); return; }
 
-      await supabase.from('game_profiles').upsert([{ 
-        id: user, nickname: nicknameTrim, points: 1000, dang: 1000000, 
-        weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, 
-        enhance_count: 0, duel_count: 10, last_duel_date: getTodayString() 
-      }]);
+      await supabase.from('game_profiles').upsert([{ id: user, nickname: n, points: 1000, dang: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3, enhance_count: 0, duel_count: 10, last_duel_date: getTodayString() }]).then(checkDB);
       
       const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: 3 };
       const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: 10, protect_count: 3 };
-      await supabase.from('weapons').insert([initialMain, initialSub]);
+      await supabase.from('weapons').insert([initialMain, initialSub]).then(checkDB);
       
       await loadGameData(user);
+    } catch (err) {
+      alert("계정 생성 오류: " + err.message);
     } finally { setIsProcessing(false); }
   };
   
@@ -280,16 +253,16 @@ export default function GameLobby() {
     if (isProcessing) return;
     let newName = e.target.value.trim(); 
     if (!newName) { setNickname('이름없음'); newName = '이름없음'; }
-    if (FORBIDDEN_WORDS.some(word => newName.includes(word))) return alert("부적절한 닉네임입니다.");
+    if (FORBIDDEN_WORDS.some(w => newName.includes(w))) return alert("부적절한 닉네임입니다.");
 
     setIsProcessing(true);
     try {
-      const { data: existingUser } = await supabase.from('game_profiles').select('id').eq('nickname', newName).neq('id', user).maybeSingle();
-      if (existingUser) { alert("이미 사용 중인 닉네임입니다."); return; }
-
-      setNickname(newName); 
-      if (user) await supabase.from('game_profiles').update({ nickname: newName }).eq('id', user);
-    } finally { setIsProcessing(false); }
+      const { data: exist } = await supabase.from('game_profiles').select('id').eq('nickname', newName).neq('id', user).maybeSingle();
+      if (exist) { alert("이미 사용 중인 닉네임입니다."); return; }
+      if (user) await supabase.from('game_profiles').update({ nickname: newName }).eq('id', user).then(checkDB);
+    } catch(err) {
+      alert("닉네임 변경 오류: " + err.message);
+    } finally { setIsProcessing(false); await loadGameData(user); }
   };
 
   const handleBuyBox = async (type, baseCost, qty) => {
@@ -300,26 +273,17 @@ export default function GameLobby() {
     
     setIsProcessing(true);
     try {
-      const newDang = dang - totalCost; 
-      setDang(newDang); 
-
-      let updates = { dang: newDang };
-      if (type === 'weapon') { 
-        setWeaponBoxes(prev => prev + qty); 
-        updates.weapon_boxes = weaponBoxes + qty; 
-      } else { 
-        setScrollBoxes(prev => prev + qty); 
-        updates.scroll_boxes = scrollBoxes + qty; 
-      }
+      let updates = { dang: dang - totalCost };
+      if (type === 'weapon') updates.weapon_boxes = weaponBoxes + qty; 
+      else updates.scroll_boxes = scrollBoxes + qty; 
       
-      await supabase.from('game_profiles').update(updates).eq('id', user);
+      await supabase.from('game_profiles').update(updates).eq('id', user).then(checkDB);
+      
+      if (type === 'weapon') setBuyQtyWeapon(1);
+      else setBuyQtyScroll(1);
       await loadGameData(user); 
-      
-      if (type === 'weapon') {
-        setBuyQtyWeapon(1);
-      } else {
-        setBuyQtyScroll(1);
-      }
+    } catch (err) {
+      alert("상점 구매 오류: " + err.message);
     } finally { setIsProcessing(false); }
   };
 
@@ -328,33 +292,25 @@ export default function GameLobby() {
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
     if (inventory.length >= 10) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
     
-    setIsProcessing(true);
-    setActiveGacha('weapon');
+    setIsProcessing(true); setActiveGacha('weapon');
     
     try {
-      const nextWeaponBoxes = weaponBoxes - 1;
-      setWeaponBoxes(nextWeaponBoxes); 
-      
       const rand = Math.random() * 100; let newGrade = 'normal';
       if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
       const baseAtk = { normal: 10, magic: 25, rare: 60, epic: 150, legendary: 400 }[newGrade];
       const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
       const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
 
-      await supabase.from('game_profiles').update({ weapon_boxes: nextWeaponBoxes }).eq('id', user);
-      await supabase.from('weapons').insert([newWeaponData]); 
+      await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - 1 }).eq('id', user).then(checkDB);
+      await supabase.from('weapons').insert([newWeaponData]).then(checkDB); 
       
       setTimeout(async () => {
-        setInventory(prev => [...prev, newWeaponData]); 
         setPopupMsg(`🎉 [${getGradeLabel(newGrade)}] ${newName} 획득!\n(가방에 보관되었습니다)`); 
-        setActiveGacha(null);
-        await loadGameData(user); 
-        setIsProcessing(false); 
+        setActiveGacha(null); await loadGameData(user); setIsProcessing(false); 
       }, 800);
     } catch(err) {
-      alert("상자 열기 오류!");
-      setActiveGacha(null);
-      setIsProcessing(false);
+      alert("무기 뽑기 오류 (새로고침 요망): \n" + err.message);
+      setActiveGacha(null); setIsProcessing(false);
     }
   };
 
@@ -362,31 +318,24 @@ export default function GameLobby() {
     if (isProcessing) return;
     if (scrollBoxes <= 0) return alert('주문서 상자가 없습니다!');
     
-    setIsProcessing(true);
-    setActiveGacha('scroll');
+    setIsProcessing(true); setActiveGacha('scroll');
     
     try {
-      const nextScrollBoxes = scrollBoxes - 1;
-      setScrollBoxes(nextScrollBoxes); 
-      
       const rand = Math.random() * 100; let msg; 
-      let updates = { scroll_boxes: nextScrollBoxes };
+      let updates = { scroll_boxes: scrollBoxes - 1 };
 
       if (rand <= 20) { msg = '🛡️ 파괴방지 주문서 획득!'; updates.protect_scrolls = protectScrolls + 1; }
       else if (rand <= 50) { msg = '✨ 축복받은 무기 강화 주문서 획득!'; updates.blessed_scrolls = blessedScrolls + 1; }
       else { msg = '📜 무기 강화 주문서 획득!'; updates.normal_scrolls = normalScrolls + 1; }
       
-      await supabase.from('game_profiles').update(updates).eq('id', user);
+      await supabase.from('game_profiles').update(updates).eq('id', user).then(checkDB);
       
       setTimeout(async () => {
-        setPopupMsg(msg); setActiveGacha(null);
-        await loadGameData(user); 
-        setIsProcessing(false);
+        setPopupMsg(msg); setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
       }, 500);
     } catch(err) {
-      alert("상자 열기 오류!");
-      setActiveGacha(null);
-      setIsProcessing(false);
+      alert("주문서 뽑기 오류: " + err.message);
+      setActiveGacha(null); setIsProcessing(false);
     }
   };
 
@@ -396,14 +345,12 @@ export default function GameLobby() {
     try {
       const currentEquipped = targetSlot === 'main' ? mainWeapon : subWeapon;
       if (currentEquipped) { 
-          await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentEquipped.id); 
+          await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentEquipped.id).then(checkDB); 
       }
-      await supabase.from('weapons').update({ slot_type: targetSlot }).eq('id', selectedInvItem.id);
+      await supabase.from('weapons').update({ slot_type: targetSlot }).eq('id', selectedInvItem.id).then(checkDB);
       
-      setSelectedInvItem(null); 
-      setPopupMsg(`✅ 장착 완료!`);
-      await loadGameData(user); 
-    } finally { setIsProcessing(false); }
+      setSelectedInvItem(null); setPopupMsg(`✅ 장착 완료!`); await loadGameData(user); 
+    } catch(err) { alert("장착 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
   const handleSell = async () => {
@@ -414,14 +361,11 @@ export default function GameLobby() {
     
     setIsProcessing(true);
     try {
-      await supabase.from('weapons').delete().eq('id', selectedInvItem.id);
-      const newDang = dang + sellPrice;
-      await supabase.from('game_profiles').update({ dang: newDang }).eq('id', user);
+      await supabase.from('weapons').delete().eq('id', selectedInvItem.id).then(checkDB);
+      await supabase.from('game_profiles').update({ dang: dang + sellPrice }).eq('id', user).then(checkDB);
       
-      setSelectedInvItem(null); 
-      setPopupMsg(`💰 판매 완료!\n${sellPrice.toLocaleString()} 댕을 획득했습니다.`);
-      await loadGameData(user); 
-    } finally { setIsProcessing(false); }
+      setSelectedInvItem(null); setPopupMsg(`💰 판매 완료!\n${sellPrice.toLocaleString()} 댕을 획득했습니다.`); await loadGameData(user); 
+    } catch(err) { alert("판매 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
   const executeMultiSell = async () => {
@@ -441,14 +385,12 @@ export default function GameLobby() {
         totalGain += (base + (item.enhancement_level * 500));
       });
 
-      await supabase.from('weapons').delete().in('id', idsToDelete);
-      const newDang = dang + totalGain;
-      await supabase.from('game_profiles').update({ dang: newDang }).eq('id', user);
+      await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
+      await supabase.from('game_profiles').update({ dang: dang + totalGain }).eq('id', user).then(checkDB);
       
-      setIsMultiSellModalOpen(false); 
-      setPopupMsg(`💰 선택 일괄 판매 완료!\n총 ${itemsToSell.length}개의 무기를 팔아 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
+      setIsMultiSellModalOpen(false); setPopupMsg(`💰 선택 일괄 판매 완료!\n총 ${itemsToSell.length}개의 무기를 팔아 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
       await loadGameData(user); 
-    } finally { setIsProcessing(false); }
+    } catch (err) { alert("일괄 판매 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
   const handleSwap = async () => { 
@@ -457,27 +399,19 @@ export default function GameLobby() {
     
     setIsProcessing(true);
     try {
-      const currentMain = mainWeapon;
-      const currentSub = subWeapon;
-
-      setMainWeapon(currentSub ? { ...currentSub, slot_type: 'main' } : null);
-      setSubWeapon(currentMain ? { ...currentMain, slot_type: 'sub' } : null);
-
-      if (currentMain) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentMain.id);
-      if (currentSub) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentSub.id);
-      if (currentSub) await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', currentSub.id);
-      if (currentMain) await supabase.from('weapons').update({ slot_type: 'sub' }).eq('id', currentMain.id);
+      if (mainWeapon) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', mainWeapon.id).then(checkDB);
+      if (subWeapon) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', subWeapon.id).then(checkDB);
+      if (subWeapon) await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', subWeapon.id).then(checkDB);
+      if (mainWeapon) await supabase.from('weapons').update({ slot_type: 'sub' }).eq('id', mainWeapon.id).then(checkDB);
       
       setPopupMsg("🔄 무기 위치를 교체했습니다!");
       await loadGameData(user); 
-    } finally { setIsProcessing(false); }
+    } catch(err) { alert("무기 교체 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
   const executeEnhance = async (slot) => { 
     if (isProcessing) return;
-    setIsProcessing(true);
-    
-    setWarningTarget(null); setEnhancingSlot(slot);
+    setIsProcessing(true); setWarningTarget(null); setEnhancingSlot(slot);
     const targetWeapon = slot === 'main' ? mainWeapon : subWeapon;
     const isProtecting = slot === 'main' ? useProtectMain : useProtectSub;
     let pUpdates = {};
@@ -486,7 +420,11 @@ export default function GameLobby() {
     else { pUpdates.blessed_scrolls = blessedScrolls - 1; }
     if (isProtecting) { pUpdates.protect_scrolls = protectScrolls - 1; }
     
-    await supabase.from('game_profiles').update(pUpdates).eq('id', user);
+    try {
+      await supabase.from('game_profiles').update(pUpdates).eq('id', user).then(checkDB);
+    } catch(err) {
+      alert("주문서 사용 실패: " + err.message); setEnhancingSlot(null); setIsProcessing(false); return;
+    }
     
     setTimeout(async () => {
       try {
@@ -502,30 +440,22 @@ export default function GameLobby() {
               if(targetWeapon.weapon_grade === 'magic') { min=20; max=35; } else if(targetWeapon.weapon_grade === 'rare') { min=35; max=55; } else if(targetWeapon.weapon_grade === 'epic') { min=60; max=90; } else if(targetWeapon.weapon_grade === 'legendary') { min=100; max=150; }
               totalAddedAtk += Math.floor(Math.random() * (max - min + 1)) + min;
           }
-          let newAtk = targetWeapon.attack + totalAddedAtk;
           resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${totalAddedAtk}] 상승했습니다!\n(증가폭: ${min} ~ ${max} 중 랜덤)`;
           
-          const newEnhanceCount = enhanceCount + 1;
-          
-          await Promise.all([
-            supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id),
-            supabase.from('game_profiles').update({ enhance_count: newEnhanceCount }).eq('id', user)
-          ]);
-          
+          await supabase.from('weapons').update({ enhancement_level: newLvl, attack: targetWeapon.attack + totalAddedAtk }).eq('id', targetWeapon.id).then(checkDB);
+          await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1 }).eq('id', user).then(checkDB);
         } else {
           if (isProtecting) {
             resultMsg = `💥 강화 실패!\n하지만 파괴방지 주문서가 무기를 보호했습니다.`;
-            await supabase.from('weapons').update({ protect_count: targetWeapon.protect_count - 1 }).eq('id', targetWeapon.id);
+            await supabase.from('weapons').update({ protect_count: targetWeapon.protect_count - 1 }).eq('id', targetWeapon.id).then(checkDB);
           } else {
             resultMsg = `💀 쨍그랑!\n무기가 형체도 없이 파괴되었습니다...`;
-            await supabase.from('weapons').delete().eq('id', targetWeapon.id);
+            await supabase.from('weapons').delete().eq('id', targetWeapon.id).then(checkDB);
           }
         }
-        setPopupMsg(resultMsg);
-        await loadGameData(user); 
-      } finally {
-        setEnhancingSlot(null); 
-        setIsProcessing(false); 
+        setPopupMsg(resultMsg); await loadGameData(user); 
+      } catch (err) { alert("강화 결과 저장 오류: " + err.message); } finally {
+        setEnhancingSlot(null); setIsProcessing(false); 
       }
     }, 1200);
   };
@@ -541,7 +471,6 @@ export default function GameLobby() {
     if (slot === 'main') setWarningTarget('main'); else executeEnhance('sub');
   };
 
-  // --- 화면 UI 파트 ---
   if (loading) return <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6 font-bold">서버 연결 중...</div>;
 
   if (showIntro) return (
@@ -589,8 +518,6 @@ export default function GameLobby() {
       </div>
 
       <main className="flex-1 overflow-y-auto p-2">
-        
-        {/* ⚔️ 강화 탭 */}
         {activeTab === 'enhance' && (
           <div className="flex flex-col h-full gap-1 justify-between min-h-[450px]">
             <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
@@ -618,19 +545,12 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 📦 창고/상점 탭 */}
         {activeTab === 'inventory' && (
           <div className="flex flex-col gap-4 pb-4">
             <div>
               <div className="flex justify-between items-center mb-2 px-2">
                   <h2 className="text-xs font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/10)</h2>
-                  <button 
-                    onClick={() => setIsMultiSellModalOpen(true)}
-                    disabled={isProcessing}
-                    className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50"
-                  >
-                    일괄 판매 🗑️
-                  </button>
+                  <button onClick={() => setIsMultiSellModalOpen(true)} disabled={isProcessing} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50">일괄 판매 🗑️</button>
               </div>
               <div className="grid grid-cols-5 gap-2 px-2">
                 {Array(10).fill(0).map((_, i) => {
@@ -674,11 +594,8 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 🏆 투기장 랭킹 탭 */}
         {activeTab === 'arena' && (
           <div className="flex flex-col h-full gap-2">
-            
-            {/* 💡 [UI 수정] 일일 결투 횟수 표시 영역 추가 */}
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
               <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
               <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
@@ -699,33 +616,25 @@ export default function GameLobby() {
                 <div className="flex flex-col gap-2">
                   {leaderboard.map((ranker, index) => (
                     <div key={index} className={`flex items-center justify-between p-2 rounded-lg border ${index === 0 ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]' : index < 3 ? 'bg-gray-700/50 border-gray-500' : 'bg-gray-900 border-gray-800'}`}>
-                      
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className={`font-black w-5 text-center shrink-0 ${index === 0 ? 'text-yellow-400 text-lg' : index === 1 ? 'text-gray-300 text-base' : index === 2 ? 'text-orange-400 text-base' : 'text-gray-500 text-xs'}`}>{index + 1}</span>
                         <div className="flex flex-col truncate pr-2">
-                          <span className={`text-[11px] font-bold truncate ${ranker.id === user ? 'text-green-400' : 'text-gray-200'}`}>
-                            {ranker.nickname}
-                          </span>
+                          <span className={`text-[11px] font-bold truncate ${ranker.id === user ? 'text-green-400' : 'text-gray-200'}`}>{ranker.nickname}</span>
                           <span className={`text-[10px] truncate ${gradeTextColors[ranker.mainWeapon.weapon_grade]}`}>+{ranker.mainWeapon.enhancement_level} {ranker.mainWeapon.name}</span>
                         </div>
                       </div>
-                      
                       <div className="flex items-center gap-1.5 shrink-0">
                         <div className="bg-gray-950 px-1.5 py-1 rounded border border-gray-700 text-right flex flex-col justify-center min-w-[55px]">
                           {rankType === 'attack' && <span className="text-[10px] font-black text-red-400 w-full block">⚔️ {ranker.mainWeapon.attack.toLocaleString()}</span>}
                           {rankType === 'enhance' && <span className="text-[10px] font-black text-blue-400 w-full block">🛠️ {(ranker.enhance_count || 0).toLocaleString()}회</span>}
                           {rankType === 'points' && <span className="text-[10px] font-black text-yellow-400 w-full block">🏆 {(ranker.points || 0).toLocaleString()}</span>}
                         </div>
-                        
                         {ranker.id !== user ? (
-                          <button onClick={() => handleDuel(ranker)} disabled={isProcessing} className="bg-red-700 hover:bg-red-600 px-2 py-1.5 rounded text-[10px] font-black text-white shadow-md active:scale-95 transition-transform shrink-0 disabled:opacity-50">
-                            결투 ⚔️
-                          </button>
+                          <button onClick={() => handleDuel(ranker)} disabled={isProcessing} className="bg-red-700 hover:bg-red-600 px-2 py-1.5 rounded text-[10px] font-black text-white shadow-md active:scale-95 transition-transform shrink-0 disabled:opacity-50">결투 ⚔️</button>
                         ) : (
                           <div className="px-3 py-1.5 text-[10px] font-black text-green-400 text-center shrink-0">나 🛡️</div>
                         )}
                       </div>
-
                     </div>
                   ))}
                 </div>
@@ -733,28 +642,23 @@ export default function GameLobby() {
             </div>
           </div>
         )}
-
       </main>
 
-      {/* --- 하단 네비게이션 --- */}
       <nav className="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50 relative">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
       </nav>
 
-      {/* 결투 애니메이션 모달창 */}
       {duelingTarget && (
         <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[120] p-6 text-center">
           <div className="flex items-center gap-6 mb-8">
             <div className="flex flex-col items-center">
-              <span className="text-5xl">🛡️</span>
-              <span className="text-blue-400 font-black mt-3 text-lg">나</span>
+              <span className="text-5xl">🛡️</span><span className="text-blue-400 font-black mt-3 text-lg">나</span>
             </div>
             <span className="text-6xl animate-bounce">⚔️</span>
             <div className="flex flex-col items-center">
-              <span className="text-5xl">😈</span>
-              <span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span>
+              <span className="text-5xl">😈</span><span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span>
             </div>
           </div>
           <h2 className="text-3xl font-black text-red-500 mb-2 animate-pulse tracking-widest">결투 진행 중...</h2>
@@ -762,33 +666,20 @@ export default function GameLobby() {
         </div>
       )}
 
-      {/* 일괄 판매 등급 선택 모달창 */}
       {isMultiSellModalOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[130] p-6">
           <div className="bg-gray-900 border-2 border-gray-700 rounded-xl p-5 w-full max-w-sm shadow-2xl">
             <h2 className="text-lg font-black text-white mb-4 text-center">일괄 판매 설정</h2>
-            
             <p className="text-xs text-gray-400 mb-3 text-center">판매할 무기의 등급을 선택하세요.</p>
-            
             <div className="space-y-2 mb-5">
               {['normal', 'magic', 'rare', 'epic', 'legendary'].map(grade => (
                 <label key={grade} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sellGrades[grade] ? 'bg-red-900/30 border-red-700' : 'bg-gray-800 border-gray-700'}`}>
-                  <input 
-                    type="checkbox" 
-                    checked={sellGrades[grade]} 
-                    onChange={(e) => setSellGrades(prev => ({ ...prev, [grade]: e.target.checked }))}
-                    className="w-5 h-5 accent-red-500"
-                  />
-                  <span className={`text-sm font-bold ${gradeTextColors[grade]}`}>
-                    {getGradeLabel(grade)} 등급
-                  </span>
-                  <span className="text-xs text-gray-400 ml-auto">
-                    (보유: {inventory.filter(w => w.weapon_grade === grade).length}개)
-                  </span>
+                  <input type="checkbox" checked={sellGrades[grade]} onChange={(e) => setSellGrades(prev => ({ ...prev, [grade]: e.target.checked }))} className="w-5 h-5 accent-red-500"/>
+                  <span className={`text-sm font-bold ${gradeTextColors[grade]}`}>{getGradeLabel(grade)} 등급</span>
+                  <span className="text-xs text-gray-400 ml-auto">(보유: {inventory.filter(w => w.weapon_grade === grade).length}개)</span>
                 </label>
               ))}
             </div>
-            
             <div className="bg-gray-950 p-3 rounded-lg text-center mb-5 border border-gray-800">
                <p className="text-xs text-gray-400 mb-1">예상 획득 댕</p>
                <p className="text-xl font-black text-yellow-500">
@@ -798,7 +689,6 @@ export default function GameLobby() {
                  }, 0).toLocaleString()} 댕
                </p>
             </div>
-
             <div className="flex gap-2">
               <button disabled={isProcessing} onClick={() => setIsMultiSellModalOpen(false)} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg text-sm transition-colors disabled:opacity-50">취소</button>
               <button disabled={isProcessing} onClick={executeMultiSell} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg text-sm shadow-md transition-colors disabled:opacity-50">판매 실행</button>
@@ -807,7 +697,6 @@ export default function GameLobby() {
         </div>
       )}
 
-      {/* 모달 팝업들 */}
       {selectedInvItem && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-6">
           <div className={`bg-gray-900 border-2 rounded-xl p-5 w-full max-w-sm text-center shadow-2xl ${gradeCardStyles[selectedInvItem.weapon_grade]}`}>
@@ -816,7 +705,6 @@ export default function GameLobby() {
              <div className="bg-gray-950 inline-block px-3 py-1 rounded border border-gray-700 mb-6">
                <p className="text-xs font-bold text-gray-200">⚔️ 공격력: {selectedInvItem.attack.toLocaleString()}</p>
              </div>
-             
              <div className="flex flex-col gap-2">
                <button disabled={isProcessing} onClick={() => handleEquip('main')} className="bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">⚔️ 본장비로 장착하기</button>
                <button disabled={isProcessing} onClick={() => handleEquip('sub')} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">🗡️ 서브장비로 장착하기</button>
