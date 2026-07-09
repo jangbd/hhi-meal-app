@@ -48,24 +48,10 @@ const WEAPON_CONFIG = {
 
 // 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
-  if (grade === 'legendary') {
-    if (level < 5) return 30;
-    if (level < 9) return 15;
-    return 5;
-  }
-  if (grade === 'epic') {
-    if (level < 5) return 70;
-    if (level < 9) return 40;
-    return 20;
-  }
-  if (grade === 'rare') {
-    if (level < 5) return 90;
-    if (level < 9) return 70;
-    return 50;
-  }
-  if (level < 5) return 100;
-  if (level < 9) return 90;
-  return 80;
+  if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
+  if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
+  if (grade === 'rare') return level < 5 ? 90 : level < 9 ? 70 : 50;
+  return level < 5 ? 100 : level < 9 ? 90 : level < 15 ? 60 : 30;
 };
 
 // 재테크용 판매 금액 계산 공식 (기하급수적 상승)
@@ -85,6 +71,7 @@ export default function GameLobby() {
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showingAd, setShowingAd] = useState(false); // 💡 전면 광고 상태 추가
   
   // 재화 및 점수
   const [points, setPoints] = useState(0); 
@@ -247,11 +234,20 @@ export default function GameLobby() {
               return { ...p, mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
             });
 
+            // 💡 [변경] 동점자 발생 시 먼저 달성한 유저(updated_ts가 작은 유저)가 상위 랭킹
             rankData.sort((a, b) => {
-              if (rankType === 'attack') return b.mainWeapon.attack - a.mainWeapon.attack;
-              if (rankType === 'enhance') return (b.enhance_count || 0) - (a.enhance_count || 0);
-              return b.points - a.points; 
+              let diff = 0;
+              if (rankType === 'attack') diff = b.mainWeapon.attack - a.mainWeapon.attack;
+              else if (rankType === 'enhance') diff = (b.enhance_count || 0) - (a.enhance_count || 0);
+              else diff = (b.points || 0) - (a.points || 0);
+
+              if (diff === 0) {
+                // 점수가 같다면 시간 기록으로 순위 판별 (먼저 한 사람이 위로)
+                return (a.updated_ts || Infinity) - (b.updated_ts || Infinity);
+              }
+              return diff;
             });
+
             setLeaderboard(rankData.slice(0, 10)); 
           } else { setLeaderboard([]); }
         } catch (e) { console.error(e); }
@@ -278,11 +274,12 @@ export default function GameLobby() {
         let resultMsg = '';
         if (myPower >= targetPower) {
           const newPoints = points + 50;
-          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user).then(checkDB); 
+          // 💡 [추가] 점수 변동 시 updated_ts 기록
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount, updated_ts: Date.now() }).eq('id', user).then(checkDB); 
           resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n결투 포인트 50 P 획득!\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         } else {
           const newPoints = Math.max(0, points - 20);
-          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount }).eq('id', user).then(checkDB); 
+          await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount, updated_ts: Date.now() }).eq('id', user).then(checkDB); 
           resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n결투 포인트 20 P 상실...\n(남은 결투 횟수: ${nextDuelCount}/10)`;
         }
         setPopupMsg(resultMsg); await loadGameData(user);
@@ -311,7 +308,8 @@ export default function GameLobby() {
         weapon_boxes: 1, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 2, protect_scrolls: 1, 
         enhance_count: 0, duel_count: 10, 
         last_duel_date: getTodayString(),
-        last_reward_month: getCurrentMonthString() 
+        last_reward_month: getCurrentMonthString(),
+        updated_ts: Date.now()
       }]).then(checkDB);
       
       const magicWeapon = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'magic', enhancement_level: 0, name: '초보자의 롱소드', attack: WEAPON_CONFIG['magic'].baseAtk, protect_count: WEAPON_CONFIG['magic'].protect };
@@ -348,7 +346,6 @@ export default function GameLobby() {
     } finally { setIsProcessing(false); }
   };
 
-  // 1개 열기 (무기)
   const handleOpenWeaponBox = async () => {
     if (isProcessing) return;
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
@@ -381,67 +378,72 @@ export default function GameLobby() {
     }
   };
 
-  // 💡 [신규] 무기 상자 모두 열기 (여유 공간만큼만)
+  // 💡 [광고 노출 로직 추가] 무기 상자 모두 열기
   const handleOpenAllWeaponBoxes = async () => {
     if (isProcessing) return;
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
     const availableSlots = 20 - inventory.length;
     if (availableSlots <= 0) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
 
-    setIsProcessing(true); setActiveGacha('weapon');
+    setIsProcessing(true); 
+    setShowingAd(true); // 광고 재생 시작
 
-    try {
-      // 보유한 상자와 빈칸 중 더 작은 수만큼 개봉
-      const openCount = Math.min(weaponBoxes, availableSlots);
-      const newWeapons = [];
-      const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
+    // 실제 앱 출시 시 이 위치에 애드몹 SDK 호출 코드가 들어갑니다.
+    setTimeout(async () => {
+      setShowingAd(false); // 광고 종료
+      setActiveGacha('weapon');
 
-      for (let i = 0; i < openCount; i++) {
-        const rand = Math.random() * 100;
-        let newGrade = 'normal';
-        if (rand <= 0.1) newGrade = 'legendary'; 
-        else if (rand <= 1.1) newGrade = 'epic'; 
-        else if (rand <= 6.1) newGrade = 'rare'; 
-        else if (rand <= 21.1) newGrade = 'magic';
+      try {
+        const openCount = Math.min(weaponBoxes, availableSlots);
+        const newWeapons = [];
+        const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
 
-        resultCounts[newGrade]++;
+        for (let i = 0; i < openCount; i++) {
+          const rand = Math.random() * 100;
+          let newGrade = 'normal';
+          if (rand <= 0.1) newGrade = 'legendary'; 
+          else if (rand <= 1.1) newGrade = 'epic'; 
+          else if (rand <= 6.1) newGrade = 'rare'; 
+          else if (rand <= 21.1) newGrade = 'magic';
 
-        const config = WEAPON_CONFIG[newGrade];
-        const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
+          resultCounts[newGrade]++;
 
-        newWeapons.push({
-          id: generateUUID(),
-          user_id: user,
-          slot_type: 'inventory',
-          weapon_grade: newGrade,
-          enhancement_level: 0,
-          name: newName,
-          attack: config.baseAtk,
-          protect_count: config.protect
-        });
+          const config = WEAPON_CONFIG[newGrade];
+          const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
+
+          newWeapons.push({
+            id: generateUUID(),
+            user_id: user,
+            slot_type: 'inventory',
+            weapon_grade: newGrade,
+            enhancement_level: 0,
+            name: newName,
+            attack: config.baseAtk,
+            protect_count: config.protect
+          });
+        }
+
+        await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - openCount }).eq('id', user).then(checkDB);
+        await supabase.from('weapons').insert(newWeapons).then(checkDB);
+
+        setTimeout(async () => {
+          let msg = `⚔️ 스폰서 보상: 상자 ${openCount}개 개봉 완료!\n\n`;
+          if (resultCounts.legendary) msg += `🟨 전설: ${resultCounts.legendary}개\n`;
+          if (resultCounts.epic) msg += `🟪 에픽: ${resultCounts.epic}개\n`;
+          if (resultCounts.rare) msg += `🟦 희귀: ${resultCounts.rare}개\n`;
+          if (resultCounts.magic) msg += `🟩 마법: ${resultCounts.magic}개\n`;
+          if (resultCounts.normal) msg += `⬜ 일반: ${resultCounts.normal}개\n`;
+
+          setPopupMsg(msg);
+          setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+        }, 1000);
+      } catch (err) {
+        alert("무기 일괄 개봉 오류: " + err.message);
+        setActiveGacha(null); setIsProcessing(false);
       }
-
-      await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - openCount }).eq('id', user).then(checkDB);
-      await supabase.from('weapons').insert(newWeapons).then(checkDB);
-
-      setTimeout(async () => {
-        let msg = `⚔️ 상자 ${openCount}개 개봉 완료!\n\n`;
-        if (resultCounts.legendary) msg += `🟨 전설: ${resultCounts.legendary}개\n`;
-        if (resultCounts.epic) msg += `🟪 에픽: ${resultCounts.epic}개\n`;
-        if (resultCounts.rare) msg += `🟦 희귀: ${resultCounts.rare}개\n`;
-        if (resultCounts.magic) msg += `🟩 마법: ${resultCounts.magic}개\n`;
-        if (resultCounts.normal) msg += `⬜ 일반: ${resultCounts.normal}개\n`;
-
-        setPopupMsg(msg);
-        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
-      }, 1000);
-    } catch (err) {
-      alert("무기 일괄 개봉 오류: " + err.message);
-      setActiveGacha(null); setIsProcessing(false);
-    }
+    }, 3000); // 광고 3초 대기
   };
 
-  // 1개 열기 (주문서)
   const handleOpenScrollBox = async () => {
     if (isProcessing) return;
     if (scrollBoxes <= 0) return alert('주문서 상자가 없습니다!');
@@ -476,40 +478,46 @@ export default function GameLobby() {
     }
   };
 
-  // 💡 [신규] 주문서 상자 모두 열기
+  // 💡 [광고 노출 로직 추가] 주문서 상자 모두 열기
   const handleOpenAllScrollBoxes = async () => {
     if (isProcessing) return;
     if (scrollBoxes <= 0) return alert('주문서 상자가 없습니다!');
 
-    setIsProcessing(true); setActiveGacha('scroll');
+    setIsProcessing(true);
+    setShowingAd(true);
 
-    try {
-      let addedNormal = 0;
-      let addedBlessed = 0;
-      let addedProtect = 0;
+    setTimeout(async () => {
+      setShowingAd(false);
+      setActiveGacha('scroll');
 
-      for (let i = 0; i < scrollBoxes; i++) {
-        const rand = Math.random() * 100;
-        if (rand <= 10) addedProtect++;
-        else if (rand <= 30) addedBlessed++;
-        else addedNormal++;
+      try {
+        let addedNormal = 0;
+        let addedBlessed = 0;
+        let addedProtect = 0;
+
+        for (let i = 0; i < scrollBoxes; i++) {
+          const rand = Math.random() * 100;
+          if (rand <= 10) addedProtect++;
+          else if (rand <= 30) addedBlessed++;
+          else addedNormal++;
+        }
+
+        await supabase.from('game_profiles').update({
+          scroll_boxes: 0,
+          protect_scrolls: protectScrolls + addedProtect,
+          blessed_scrolls: blessedScrolls + addedBlessed,
+          normal_scrolls: normalScrolls + addedNormal
+        }).eq('id', user).then(checkDB);
+
+        setTimeout(async () => {
+          setPopupMsg(`📦 스폰서 보상: 상자 ${scrollBoxes}개 개봉 완료!\n\n🛡️ 파괴방지: ${addedProtect}개\n✨ 축복주문서: ${addedBlessed}개\n📜 일반주문서: ${addedNormal}개`);
+          setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+        }, 800);
+      } catch (err) {
+        alert("주문서 일괄 개봉 오류: " + err.message);
+        setActiveGacha(null); setIsProcessing(false);
       }
-
-      await supabase.from('game_profiles').update({
-        scroll_boxes: 0,
-        protect_scrolls: protectScrolls + addedProtect,
-        blessed_scrolls: blessedScrolls + addedBlessed,
-        normal_scrolls: normalScrolls + addedNormal
-      }).eq('id', user).then(checkDB);
-
-      setTimeout(async () => {
-        setPopupMsg(`📦 상자 ${scrollBoxes}개 개봉 완료!\n\n🛡️ 파괴방지: ${addedProtect}개\n✨ 축복주문서: ${addedBlessed}개\n📜 일반주문서: ${addedNormal}개`);
-        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
-      }, 800);
-    } catch (err) {
-      alert("주문서 일괄 개봉 오류: " + err.message);
-      setActiveGacha(null); setIsProcessing(false);
-    }
+    }, 3000);
   };
 
   const handleEquip = async (targetSlot) => { 
@@ -522,6 +530,9 @@ export default function GameLobby() {
       }
       await supabase.from('weapons').update({ slot_type: targetSlot }).eq('id', selectedInvItem.id).then(checkDB);
       
+      // 장착 시 메인 무기 공격력 등이 변경되므로 시간 기록
+      await supabase.from('game_profiles').update({ updated_ts: Date.now() }).eq('id', user).then(checkDB);
+
       setSelectedInvItem(null); setPopupMsg(`✅ 장착 완료!`); await loadGameData(user); 
     } catch(err) { alert("장착 오류: " + err.message); } finally { setIsProcessing(false); }
   };
@@ -542,6 +553,7 @@ export default function GameLobby() {
     } catch(err) { alert("판매 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
+  // 💡 [광고 노출 로직 추가] 일괄 판매 실행
   const executeMultiSell = async () => {
     if (isProcessing) return;
     const targetGrades = Object.keys(sellGrades).filter(g => sellGrades[g]);
@@ -550,20 +562,26 @@ export default function GameLobby() {
     if (itemsToSell.length === 0) return alert('선택하신 등급에 해당하는 무기가 보관함에 없습니다!');
     
     setIsProcessing(true);
-    try {
-      let totalGain = 0;
-      const idsToDelete = itemsToSell.map(w => w.id);
+    setIsMultiSellModalOpen(false); // 모달 먼저 닫기
+    setShowingAd(true); // 광고 재생
 
-      itemsToSell.forEach(item => {
-        totalGain += calculateSellPrice(item.weapon_grade, item.enhancement_level);
-      });
+    setTimeout(async () => {
+      setShowingAd(false);
+      try {
+        let totalGain = 0;
+        const idsToDelete = itemsToSell.map(w => w.id);
 
-      await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
-      await supabase.from('game_profiles').update({ dang: dang + totalGain }).eq('id', user).then(checkDB);
-      
-      setIsMultiSellModalOpen(false); setPopupMsg(`💰 선택 일괄 판매 완료!\n총 ${itemsToSell.length}개의 무기를 팔아 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
-      await loadGameData(user); 
-    } catch (err) { alert("일괄 판매 오류: " + err.message); } finally { setIsProcessing(false); }
+        itemsToSell.forEach(item => {
+          totalGain += calculateSellPrice(item.weapon_grade, item.enhancement_level);
+        });
+
+        await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
+        await supabase.from('game_profiles').update({ dang: dang + totalGain }).eq('id', user).then(checkDB);
+        
+        setPopupMsg(`💰 선택 일괄 판매 완료!\n광고 보상 혜택: ${itemsToSell.length}개의 무기를 팔아 ${totalGain.toLocaleString()} 댕을 획득했습니다.`);
+        await loadGameData(user); 
+      } catch (err) { alert("일괄 판매 오류: " + err.message); } finally { setIsProcessing(false); }
+    }, 3000);
   };
 
   const handleSwap = async () => { 
@@ -577,6 +595,9 @@ export default function GameLobby() {
       if (subWeapon) await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', subWeapon.id).then(checkDB);
       if (mainWeapon) await supabase.from('weapons').update({ slot_type: 'sub' }).eq('id', mainWeapon.id).then(checkDB);
       
+      // 장비 교체 시 시간 기록 (공격력 랭킹 판별용)
+      await supabase.from('game_profiles').update({ updated_ts: Date.now() }).eq('id', user).then(checkDB);
+
       setPopupMsg("🔄 무기 위치를 교체했습니다!");
       await loadGameData(user); 
     } catch(err) { alert("무기 교체 오류: " + err.message); } finally { setIsProcessing(false); }
@@ -637,7 +658,8 @@ export default function GameLobby() {
           resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${addedAtk}] 상승했습니다!${bonusMsg}`;
           
           await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk, protect_count: nextProtectCount }).eq('id', targetWeapon.id).then(checkDB);
-          await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1 }).eq('id', user).then(checkDB);
+          // 💡 [추가] 강화 카운트 증가 시 updated_ts 기록
+          await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1, updated_ts: Date.now() }).eq('id', user).then(checkDB);
         } else {
           if (isProtecting) {
             resultMsg = `💥 강화 실패!\n하지만 파괴방지 주문서가 무기를 보호했습니다.\n(남은 파괴방지 횟수: ${nextProtectCount})`;
@@ -693,10 +715,22 @@ export default function GameLobby() {
   return (
     <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
       
-      {isProcessing && (
+      {/* 💡 [신규] 전면 광고 오버레이 */}
+      {showingAd && (
+        <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
+          <span className="text-6xl mb-4 animate-bounce">📺</span>
+          <h2 className="text-2xl font-black text-white mb-2">스폰서 광고 재생 중...</h2>
+          <p className="text-gray-400 text-sm mb-8">잠시 후 보상이 지급됩니다.</p>
+          <div className="w-48 h-2 bg-gray-800 rounded-full overflow-hidden flex">
+             <div className="h-full bg-yellow-500 w-full animate-pulse"></div>
+          </div>
+        </div>
+      )}
+
+      {isProcessing && !showingAd && (
         <div className="fixed inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
            <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">
-             🔄 서버와 동기화 중... 잠시만 기다려주세요.
+             🔄 서버와 동기화 중입니다... 잠시만 기다려주세요.
            </span>
         </div>
       )}
@@ -818,7 +852,6 @@ export default function GameLobby() {
               </div>
             </div>
             
-            {/* 💡 [변경] 한 번에 열기 기능 UI 추가 */}
             <div className="flex flex-col gap-2 px-2 mt-2">
               <div className="flex gap-2">
                 <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-3 rounded-xl text-xs font-black shadow-md disabled:opacity-50">📜 주문서 1개 열기</button>
