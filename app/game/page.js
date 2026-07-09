@@ -7,7 +7,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 고유 ID 생성기
+// 💡 고유 ID 생성기
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -27,7 +27,7 @@ export default function GameLobby() {
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   
-  // 재화 분리: 포인트와 댕
+  // 재화 분리: 결투 포인트(points)와 상점 재화(dang)
   const [points, setPoints] = useState(0); 
   const [dang, setDang] = useState(0); 
 
@@ -81,7 +81,7 @@ export default function GameLobby() {
     if (level >= 7) return 'drop-shadow(0 0 10px rgba(255, 0, 0, 0.8)) scale-105'; return '';
   };
 
-  // 💡 데이터 초기 로딩
+  // 💡 데이터 초기 로딩 (최초 1회만 실행됨)
   const loadGameData = useCallback(async (userId) => {
     try {
       let { data: profile, error: profileErr } = await supabase.from('game_profiles').select('*').eq('id', userId).maybeSingle();
@@ -125,25 +125,42 @@ export default function GameLobby() {
     initApp();
   }, [loadGameData]);
 
-  // 💡 투기장 랭킹 로직 (실시간 데이터 바인딩 강화)
+  // 💡 [핵심 해결] 투기장 랭킹 즉각 동기화 로직
   useEffect(() => {
     if (activeTab === 'arena') {
       const fetchRank = async () => {
         setLoadingRank(true);
         try {
-          const { data: profiles } = await supabase.from('game_profiles').select('id, nickname, points').limit(50);
+          const { data: profiles } = await supabase.from('game_profiles').select('id, nickname, points');
+            
           if (profiles && profiles.length > 0) {
             const { data: allMainWeapons } = await supabase.from('weapons').select('*').eq('slot_type', 'main');
+
             const rankData = profiles.map(p => {
+              // 🚀 핵심: 내 정보는 느린 DB를 무시하고 무조건 현재 장착된 무기(mainWeapon)를 랭킹에 강제로 덮어씌웁니다!
+              if (p.id === user) {
+                return { 
+                  ...p, 
+                  points: points, // 내 최신 포인트 적용
+                  mainWeapon: mainWeapon || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
+                };
+              }
+
+              // 남의 정보는 DB 데이터를 사용
               const main = (allMainWeapons || []).find(w => w.user_id === p.id);
-              return { ...p, mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } };
+              return { 
+                ...p, 
+                mainWeapon: main || { name: '맨주먹', attack: 0, enhancement_level: 0, weapon_grade: 'normal' } 
+              };
             });
 
+            // 🚀 실시간 무기 데이터를 기반으로 순위 재정렬
             rankData.sort((a, b) => {
               if (rankType === 'attack') return b.mainWeapon.attack - a.mainWeapon.attack;
               if (rankType === 'enhance') return b.mainWeapon.enhancement_level - a.mainWeapon.enhancement_level;
               return b.points - a.points; 
             });
+            
             setLeaderboard(rankData.slice(0, 10)); 
           } else { setLeaderboard([]); }
         } catch (e) { console.error(e); }
@@ -151,7 +168,7 @@ export default function GameLobby() {
       };
       fetchRank();
     }
-  }, [activeTab, rankType, mainWeapon]); 
+  }, [activeTab, rankType, mainWeapon, points, user]); // 내 무기나 포인트가 바뀌면 랭킹도 0.001초 만에 즉시 바뀜!
 
   const handleDuel = async (target) => {
     const myAtk = (mainWeapon?.attack || 0) + (subWeapon?.attack || 0);
@@ -168,19 +185,19 @@ export default function GameLobby() {
       if (myPower >= targetPower) {
         const reward = 50; 
         const newPoints = points + reward;
-        setPoints(newPoints); 
+        setPoints(newPoints); // 즉각 반영
         await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
         resultMsg = `⚔️ [결투 승리!] ⚔️\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n명예로운 승리로 결투 포인트 ${reward} P를 획득했습니다!`;
       } else {
         const penalty = 20; 
         const newPoints = Math.max(0, points - penalty);
-        setPoints(newPoints); 
+        setPoints(newPoints); // 즉각 반영
         await supabase.from('game_profiles').update({ points: newPoints }).eq('id', user); 
         resultMsg = `💀 [결투 패배] 💀\n\n내 전투력: ${myPower.toLocaleString()}\n상대 전투력: ${targetPower.toLocaleString()}\n\n패배의 대가로 결투 포인트 ${penalty} P를 잃었습니다... 강해져서 돌아오십시오.`;
       }
+      
       setDuelingTarget(null);
       setPopupMsg(resultMsg);
-      await loadGameData(user); 
     }, 2000); 
   };
 
@@ -189,11 +206,14 @@ export default function GameLobby() {
     setLoading(true);
 
     const newProfile = { id: user, nickname: tempNickname.trim(), points: 1000, dang: 1000000, weapon_boxes: 2, scroll_boxes: 3, normal_scrolls: 10, blessed_scrolls: 5, protect_scrolls: 3 };
-    await supabase.from('game_profiles').upsert([newProfile]);
+    const { error: pErr } = await supabase.from('game_profiles').upsert([newProfile]);
+    if (pErr) { alert("계정 생성 오류: " + pErr.message); setLoading(false); return; }
     
     const initialMain = { id: generateUUID(), user_id: user, slot_type: 'main', weapon_grade: 'rare', enhancement_level: 9, name: '정령의 마검', attack: 310, protect_count: 3 };
     const initialSub = { id: generateUUID(), user_id: user, slot_type: 'sub', weapon_grade: 'normal', enhancement_level: 0, name: '초보자의 목검', attack: 10, protect_count: 3 };
-    await supabase.from('weapons').insert([initialMain, initialSub]);
+    
+    const { error: wErr } = await supabase.from('weapons').insert([initialMain, initialSub]);
+    if (wErr) { alert("초기 무기 지급 오류: " + wErr.message); }
     
     await loadGameData(user);
   };
@@ -226,12 +246,12 @@ export default function GameLobby() {
     await supabase.from('game_profiles').update(updates).eq('id', user);
   };
 
-  // 💡 [해결] 무기 상자 오픈 즉시 상태 동기화 및 강제 세이브
   const handleOpenWeaponBox = async () => {
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
     if (inventory.length >= 10) return alert('🎒 가방이 가득 찼습니다! 무기를 장착하거나 판매하세요.');
     
     setActiveGacha('weapon');
+    
     const nextWeaponBoxes = weaponBoxes - 1;
     setWeaponBoxes(nextWeaponBoxes); 
     
@@ -241,12 +261,13 @@ export default function GameLobby() {
     const newName = { normal: '초보자의 목검', magic: '강철 롱소드', rare: '정령의 기사검', epic: '파멸의 마검', legendary: '집행자의 황금검' }[newGrade];
     const newWeaponData = { id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: baseAtk, protect_count: 3 };
 
-    setInventory(prev => [...prev, newWeaponData]); 
+    const { error: insertErr } = await supabase.from('weapons').insert([newWeaponData]);
+    if (insertErr) { alert("⚠️ DB 저장 에러\n" + insertErr.message); setActiveGacha(null); return; }
 
     await supabase.from('game_profiles').update({ weapon_boxes: nextWeaponBoxes }).eq('id', user);
-    await supabase.from('weapons').insert([newWeaponData]); 
-
-    setTimeout(() => {
+    
+    setTimeout(async () => {
+      setInventory(prev => [...prev, newWeaponData]); 
       setPopupMsg(`🎉 [${getGradeLabel(newGrade)}] ${newName} 획득!\n(가방에 보관되었습니다)`); 
       setActiveGacha(null);
     }, 800);
@@ -261,11 +282,13 @@ export default function GameLobby() {
     
     const rand = Math.random() * 100; let msg; 
     let updates = { scroll_boxes: nextScrollBoxes };
+
     if (rand <= 20) { msg = '🛡️ 파괴방지 주문서 획득!'; updates.protect_scrolls = protectScrolls + 1; }
     else if (rand <= 50) { msg = '✨ 축복받은 무기 강화 주문서 획득!'; updates.blessed_scrolls = blessedScrolls + 1; }
     else { msg = '📜 무기 강화 주문서 획득!'; updates.normal_scrolls = normalScrolls + 1; }
     
-    await supabase.from('game_profiles').update(updates).eq('id', user);
+    const { error } = await supabase.from('game_profiles').update(updates).eq('id', user);
+    if (error) { alert("⚠️ 저장 에러\n" + error.message); setActiveGacha(null); return; }
     
     setTimeout(() => {
       if (rand <= 20) setProtectScrolls(prev => prev + 1);
@@ -275,10 +298,12 @@ export default function GameLobby() {
     }, 500);
   };
 
+  // 🚀 장착 시 랭킹 자동 갱신
   const handleEquip = async (targetSlot) => { 
     const currentEquipped = targetSlot === 'main' ? mainWeapon : subWeapon;
     const updatedNewItem = { ...selectedInvItem, slot_type: targetSlot };
     
+    // 화면 즉각 반영 (랭킹에 즉시 반영됨)
     if (targetSlot === 'main') setMainWeapon(updatedNewItem); else setSubWeapon(updatedNewItem);
     setInventory(prev => { 
       const newInv = prev.filter(w => w.id !== selectedInvItem.id); 
@@ -292,29 +317,31 @@ export default function GameLobby() {
     if (currentEquipped) await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentEquipped.id);
   };
 
+  // 🚀 삭제 시 랭킹 갱신 및 주먹 변환
   const handleSell = async () => {
     const basePrice = { normal: 100, magic: 300, rare: 1000, epic: 5000, legendary: 20000 }[selectedInvItem.weapon_grade];
     const sellPrice = basePrice + (selectedInvItem.enhancement_level * 500);
     if(!window.confirm(`${selectedInvItem.name}을(를) 판매하시겠습니까?\n판매 시 복구 불가하며 ${sellPrice.toLocaleString()} 댕을 획득합니다.`)) return;
+    
+    const { error } = await supabase.from('weapons').delete().eq('id', selectedInvItem.id);
+    if (error) { alert("⚠️ 무기 삭제 오류: " + error.message); return; }
     
     const newDang = dang + sellPrice;
     setDang(newDang); 
     setInventory(prev => prev.filter(w => w.id !== selectedInvItem.id)); 
     setSelectedInvItem(null); 
     setPopupMsg(`💰 판매 완료!\n${sellPrice.toLocaleString()} 댕을 획득했습니다.`);
-
-    await supabase.from('weapons').delete().eq('id', selectedInvItem.id);
     await supabase.from('game_profiles').update({ dang: newDang }).eq('id', user);
   };
 
-  // 💡 [완벽 수술] 유니크 제약조건을 완전히 우회하고 여러 번 교체해도 무한 저장되는 로직
+  // 🚀 스왑 시 랭킹 자동 갱신
   const handleSwap = async () => { 
     if (!mainWeapon || !subWeapon) return;
     
     const currentMainId = mainWeapon.id;
     const currentSubId = subWeapon.id;
 
-    // 1. 화면 즉시 가상 스왑 반영 (딜레이 리스 지연 차단)
+    // 화면 즉시 교체 (랭킹에 바로 꽂힘!)
     const tMain = { ...mainWeapon, slot_type: 'sub' };
     const tSub = { ...subWeapon, slot_type: 'main' };
     setMainWeapon(tSub); 
@@ -322,13 +349,12 @@ export default function GameLobby() {
     setUseProtectMain(false); 
     setUseProtectSub(false);
 
-    // 2. DB 업데이트 순차적 안전 보장 트랜잭션 수행
-    // Unique 인덱스 에러 방지를 위해 임시 명칭('inventory')으로 한쪽을 대피시킵니다.
     await supabase.from('weapons').update({ slot_type: 'inventory' }).eq('id', currentMainId);
     await supabase.from('weapons').update({ slot_type: 'main' }).eq('id', currentSubId);
     await supabase.from('weapons').update({ slot_type: 'sub' }).eq('id', currentMainId);
   };
 
+  // 🚀 강화 시 랭킹 공격력/강화도 자동 갱신
   const executeEnhance = async (slot) => { 
     setWarningTarget(null); setEnhancingSlot(slot);
     const targetWeapon = slot === 'main' ? mainWeapon : subWeapon;
@@ -358,7 +384,7 @@ export default function GameLobby() {
         resultMsg = `🎉 강화 성공! (+${plus})\n공격력이 [${totalAddedAtk}] 상승했습니다!\n(증가폭: ${min} ~ ${max} 중 랜덤)`;
         
         const updatedWeapon = { ...targetWeapon, enhancement_level: newLvl, attack: newAtk };
-        if (slot === 'main') setMainWeapon(updatedWeapon); else setSubWeapon(updatedWeapon);
+        if (slot === 'main') setMainWeapon(updatedWeapon); else setSubWeapon(updatedWeapon); // 🚀 랭킹 자동 반영!
         await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk }).eq('id', targetWeapon.id);
       } else {
         if (isProtecting) {
@@ -368,7 +394,7 @@ export default function GameLobby() {
           await supabase.from('weapons').update({ protect_count: targetWeapon.protect_count - 1 }).eq('id', targetWeapon.id);
         } else {
           resultMsg = `💀 쨍그랑!\n무기가 형체도 없이 파괴되었습니다...`;
-          if (slot === 'main') setMainWeapon(null); else setSubWeapon(null);
+          if (slot === 'main') setMainWeapon(null); else setSubWeapon(null); // 🚀 깨지면 랭킹에서 즉시 '맨주먹'으로 반영!
           await supabase.from('weapons').delete().eq('id', targetWeapon.id);
         }
       }
