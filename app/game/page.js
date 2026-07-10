@@ -46,12 +46,11 @@ const WEAPON_CONFIG = {
   legendary: { baseAtk: 400, gainMin: 50, gainMax: 100, protect: 1, basePrice: 20000 }
 };
 
-// 💡 [수정] 등급 및 레벨별 강화 성공 확률 최적화 (15강 이상 30% 적용)
+// 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
   if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
   if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
   if (grade === 'rare') return level < 5 ? 90 : level < 9 ? 70 : 50;
-  // 일반/마법 무기 확률 (0~4: 100%, 5~9: 90%, 10~14: 60%, 15이상: 30%)
   return level < 5 ? 100 : level < 10 ? 90 : level < 15 ? 60 : 30;
 };
 
@@ -777,7 +776,6 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [변경] 인벤토리 레이아웃 압축 (h-full 유지, 내부 여백 최소화) */}
         {activeTab === 'inventory' && (
           <div className="flex flex-col gap-2 pb-2 h-full">
             <div className="shrink-0">
@@ -809,7 +807,7 @@ export default function GameLobby() {
                      { type: 'weapon', name: '고급 무기', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
                       <div key={item.type} className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col justify-between">
                           <p className="text-[9px] font-bold text-gray-300 mb-1">{item.name} 상자</p>
-                          <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
+                          <div className="flex justify-center items-center gap-1 mb-2 bg-gray-800 py-0.5 rounded">
                             <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
                             <span className="text-xs font-black w-6 text-center">{item.qty}</span>
                             <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
@@ -881,22 +879,112 @@ export default function GameLobby() {
             </div>
           </div>
         )}
+
+        {/* 💡 [신규] 스마트 가이드 / 확률 도감 탭 페이지 */}
+        {activeTab === 'guide' && (
+          <div className="flex flex-col h-full gap-3 overflow-y-auto p-1 pb-4 text-[11px]">
+            {/* 핵심 꿀팁 하이라이트 */}
+            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
+              <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
+              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">
+                무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">+1~100 랜덤 보너스 공격력</span>이 추가됩니다. 
+                이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배(+2~200)</span>로 증폭되니 반드시 모아두세요!
+              </p>
+            </div>
+
+            {/* 강화 성공 확률표 */}
+            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+              <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
+              <table className="w-full text-center border-collapse">
+                <thead>
+                  <tr className="bg-gray-950 text-gray-400 text-[9px]">
+                    <th className="py-1 border border-gray-800">무기 등급</th>
+                    <th className="border border-gray-800">1~4강</th>
+                    <th className="border border-gray-800">5~9강</th>
+                    <th className="border border-gray-800">10강 이상</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-300 text-[10px]">
+                  <tr>
+                    <td className="py-1 font-bold text-gray-400 border border-gray-800">일반 / 마법</td>
+                    <td className="border border-gray-800 text-green-400">100%</td>
+                    <td className="border border-gray-800">90%</td>
+                    <td className="border border-gray-800 text-red-400">60% <span className="text-[8px] text-gray-500">(15강~:30%)</span></td>
+                  </tr>
+                  <tr>
+                    <td className="py-1 font-bold text-blue-400 border border-gray-800">희귀</td>
+                    <td className="border border-gray-800 text-green-400">90%</td>
+                    <td className="border border-gray-800">70%</td>
+                    <td className="border border-gray-800 text-yellow-500">50%</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1 font-bold text-purple-400 border border-gray-800">에픽</td>
+                    <td className="border border-gray-800">70%</td>
+                    <td className="border border-gray-800">40%</td>
+                    <td className="border border-gray-800 text-orange-400">20%</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1 font-bold text-yellow-400 border border-gray-800">전설</td>
+                    <td className="border border-gray-800 text-orange-500">30%</td>
+                    <td className="border border-gray-800 text-red-400">15%</td>
+                    <td className="border border-gray-800 text-red-600 font-black">5%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 뽑기 상자 확률 */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+                <h3 className="font-bold text-emerald-400 mb-1 text-xs">🗡️ 무기 등장 확률</h3>
+                <ul className="space-y-0.5 text-gray-300 text-[10px]">
+                  <li className="flex justify-between"><span>⬜ 일반 등급:</span><span className="font-mono">78.9%</span></li>
+                  <li className="flex justify-between"><span>🟩 마법 등급:</span><span className="font-mono">15.0%</span></li>
+                  <li className="flex justify-between"><span>🟦 희귀 등급:</span><span className="font-mono">5.0%</span></li>
+                  <li className="flex justify-between"><span>专 에픽 등급:</span><span className="font-mono">1.0%</span></li>
+                  <li className="flex justify-between text-yellow-400 font-bold"><span>🟨 전설 등급:</span><span className="font-mono">0.1%</span></li>
+                </ul>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+                <h3 className="font-bold text-indigo-400 mb-1 text-xs">📦 주문서 확률</h3>
+                <ul className="space-y-0.5 text-gray-300 text-[10px]">
+                  <li className="flex justify-between"><span>📜 일반 주문서:</span><span className="font-mono">70.0%</span></li>
+                  <li className="flex justify-between text-cyan-400 font-bold"><span>✨ 축복 주문서:</span><span className="font-mono">20.0%</span></li>
+                  <li className="flex justify-between text-blue-400 font-bold"><span>🛡️ 파괴 방지:</span><span className="font-mono">10.0%</span></li>
+                </ul>
+              </div>
+            </div>
+
+            {/* 무기 기본 스펙 상세 */}
+            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+              <h3 className="font-bold text-gray-200 mb-1 text-xs">🛡️ 등급별 파괴방지 및 성장 수치</h3>
+              <ul className="space-y-1 text-gray-400 text-[10px]">
+                <li>• <span className="text-white font-bold">일반 / 마법 / 희귀:</span> 파괴방지권 최대 <span className="text-blue-400">3회</span> 충전 가능</li>
+                <li>• <span className="text-purple-400 font-bold">에픽 등급무기:</span> 파괴방지권 최대 <span className="text-blue-400">2회</span> 충전 가능</li>
+                <li>• <span className="text-yellow-400 font-bold">전설 등급무기:</span> 파괴방지권 최대 <span className="text-blue-400">1회</span> 충전 가능</li>
+                <li className="text-[9px] text-red-400 mt-1">* 주의: 성공/실패와 상관없이 주문서를 적용하면 보호 횟수가 즉시 소진됩니다.</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </main>
 
+      {/* 💡 [변경] 네비게이션 바에 도움말 버튼 추가 (4개 탭 레이아웃 자동 정렬) */}
       <nav className="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50 relative">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
+        <button disabled={isProcessing} onClick={() => setActiveTab('guide')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'guide' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📖</span>도움말</button>
       </nav>
 
       {duelingTarget && (
         <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[120] p-6 text-center">
           <div className="flex items-center gap-6 mb-8">
-            <div className="flex flex-col items-center">
+            <div className="flex items-center flex-col">
               <span className="text-5xl">🛡️</span><span className="text-blue-400 font-black mt-3 text-lg">나</span>
             </div>
             <span className="text-6xl animate-bounce">⚔️</span>
-            <div className="flex flex-col items-center">
+            <div className="flex items-center flex-col">
               <span className="text-5xl">😈</span><span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span>
             </div>
           </div>
