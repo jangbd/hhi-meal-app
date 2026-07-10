@@ -550,7 +550,8 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ height: '100dvh' }}>
+    /* 💡 [수정] flex 레이아웃과 절대 배치(fixed)를 조화시켜 메뉴바를 무조건 하단 고정 */
+    <div className="fixed inset-0 flex flex-col w-full max-w-md mx-auto bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40">
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -586,6 +587,7 @@ export default function GameLobby() {
         </div>
       </div>
 
+      {/* 💡 [핵심 영역] 여기만 스크롤 되도록 flex-1 overflow-y-auto 적용 */}
       <main className="flex-1 overflow-y-auto p-2">
         {activeTab === 'enhance' && (
           <div className="flex flex-col h-full gap-1 justify-between min-h-[450px]">
@@ -648,7 +650,7 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [수정] 인벤토리 탭: pb-8 추가하여 내용 맨 하단이 메뉴바에 가려지지 않고 온전히 스크롤되도록 보장 */}
+        {/* 💡 pb-8 추가로 맨 아래 버튼 영역 공간 확보 */}
         {activeTab === 'inventory' && (
           <div className="flex flex-col gap-2 pb-8">
             <div className="shrink-0">
@@ -704,7 +706,6 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 아레나 탭도 맨 밑이 짤리지 않게 pb-8 추가 */}
         {activeTab === 'arena' && (
           <div className="flex flex-col h-full gap-2 pb-8">
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
@@ -754,7 +755,6 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 가이드 탭도 맨 밑이 짤리지 않게 pb-12 추가 */}
         {activeTab === 'guide' && (
           <div className="flex flex-col gap-3 overflow-y-auto p-1 pb-12 text-[11px]">
             <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
@@ -781,7 +781,8 @@ export default function GameLobby() {
         )}
       </main>
 
-      <nav className="h-14 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50">
+      {/* 💡 [핵심] 메뉴바를 바닥에 강제 고정하기 위해 mt-auto 속성 사용 안 함, 외곽 컨테이너의 하단에 바로 붙게 구조 최적화 */}
+      <nav className="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
