@@ -344,7 +344,7 @@ export default function GameLobby() {
         await supabase.from('weapons').insert(newWeapons).then(checkDB);
 
         setTimeout(async () => {
-          let msg = `⚔️ 상자 ${openCount}개 개봉 완료!\n\n`;
+          let msg = `⚔️ 스폰서 보상: 상자 ${openCount}개 개봉 완료!\n\n`;
           if (resultCounts.legendary) msg += `🟨 전설: ${resultCounts.legendary}개\n`;
           if (resultCounts.epic) msg += `🟪 에픽: ${resultCounts.epic}개\n`;
           if (resultCounts.rare) msg += `🟦 희귀: ${resultCounts.rare}개\n`;
@@ -550,7 +550,7 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
+    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ height: '100dvh' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -648,9 +648,9 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [적용] 1개 열기 및 모두 열기 버튼 완벽 복구, 패딩 등 레이아웃 안전 장치 유지 */}
+        {/* 💡 [수정] 인벤토리 탭: pb-8 추가하여 내용 맨 하단이 메뉴바에 가려지지 않고 온전히 스크롤되도록 보장 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col gap-1.5 pb-2 min-h-full">
+          <div className="flex flex-col gap-2 pb-8">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -673,30 +673,30 @@ export default function GameLobby() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col shrink-0">
+            <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0">
               <h2 className="text-[10px] font-bold text-yellow-400 mb-1">🛒 상점</h2>
               <div className="flex gap-2">
                   {[ { type: 'scroll', name: '의문 주문서', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
                      { type: 'weapon', name: '고급 무기', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
-                      <div key={item.type} className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col justify-between">
+                      <div key={item.type} className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col justify-between">
                           <p className="text-[9px] font-bold text-gray-300 mb-1">{item.name}</p>
                           <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-5 h-5 flex items-center justify-center bg-gray-700 rounded text-xs font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
-                            <span className="text-[10px] font-black w-5 text-center">{item.qty}</span>
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-5 h-5 flex items-center justify-center bg-gray-700 rounded text-xs font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
+                            <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                            <span className="text-xs font-black w-6 text-center">{item.qty}</span>
+                            <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
                           </div>
-                          <button disabled={isProcessing} onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[9px] py-1 rounded text-white active:bg-yellow-500 shadow-sm disabled:opacity-50">구매 ({item.cost * item.qty}댕)</button>
+                          <button disabled={isProcessing} onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50">구매 ({item.cost * item.qty}댕)</button>
                       </div>
                   ))}
               </div>
             </div>
             
-            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-2">
-              <div className="flex gap-1.5">
+            <div className="flex flex-col gap-2 px-2 mt-2 shrink-0">
+              <div className="flex gap-2">
                 <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
                 <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">🗡️ 1개 열기</button>
                 <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">⚔️ 모두 열기 ({weaponBoxes})</button>
               </div>
@@ -704,8 +704,9 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 아레나 탭도 맨 밑이 짤리지 않게 pb-8 추가 */}
         {activeTab === 'arena' && (
-          <div className="flex flex-col h-full gap-2">
+          <div className="flex flex-col h-full gap-2 pb-8">
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
               <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
               <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
@@ -753,8 +754,9 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 가이드 탭도 맨 밑이 짤리지 않게 pb-12 추가 */}
         {activeTab === 'guide' && (
-          <div className="flex flex-col h-full gap-3 overflow-y-auto p-1 pb-4 text-[11px]">
+          <div className="flex flex-col gap-3 overflow-y-auto p-1 pb-12 text-[11px]">
             <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
               <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
               <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">+1~100 랜덤 보너스 공격력</span>이 추가됩니다. 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배(+2~200)</span>로 증폭되니 반드시 모아두세요!</p>
@@ -779,7 +781,7 @@ export default function GameLobby() {
         )}
       </main>
 
-      <nav className="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50 relative">
+      <nav className="h-14 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
