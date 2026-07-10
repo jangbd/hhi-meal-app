@@ -7,8 +7,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 💡 욕설 및 금지어 필터
 const FORBIDDEN_WORDS = ['씨발', '개새끼', '존나', '창년', '병신', '개자식', '미친', '운영자', '관리자'];
 
+// 고유 ID 생성기
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -17,21 +19,25 @@ const generateUUID = () => {
   });
 };
 
+// 오늘 날짜 구하기 (일일 초기화 기준)
 const getTodayString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
+// 이번 달 구하기 (월간 초기화 기준)
 const getCurrentMonthString = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// DB 침묵 에러 탐지기
 const checkDB = (res) => {
   if (res.error) throw new Error(res.error.message);
   return res;
 };
 
+// 무기 등급별 밸런스 설정 테이블
 const WEAPON_CONFIG = {
   normal: { baseAtk: 10, gainMin: 2, gainMax: 5, protect: 3, basePrice: 100 },
   magic: { baseAtk: 25, gainMin: 4, gainMax: 8, protect: 3, basePrice: 300 },
@@ -40,6 +46,7 @@ const WEAPON_CONFIG = {
   legendary: { baseAtk: 400, gainMin: 50, gainMax: 100, protect: 1, basePrice: 20000 }
 };
 
+// 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
   if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
   if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
@@ -47,6 +54,7 @@ const getSuccessRate = (grade, level) => {
   return level < 5 ? 100 : level < 10 ? 90 : level < 15 ? 60 : 30;
 };
 
+// 재테크용 판매 금액 계산 공식 (기하급수적 상승)
 const calculateSellPrice = (grade, level) => {
   const base = WEAPON_CONFIG[grade].basePrice;
   return Math.floor(base * Math.pow((level * 0.4 + 1), 2.5)) + (level * 500);
@@ -55,29 +63,35 @@ const calculateSellPrice = (grade, level) => {
 export default function GameLobby() {
   const [activeTab, setActiveTab] = useState('enhance'); 
 
+  // --- 유저 및 상태 변수 ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null); 
   const [showIntro, setShowIntro] = useState(false);
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showingAd, setShowingAd] = useState(false); 
   
+  // 재화 및 점수
   const [points, setPoints] = useState(0); 
   const [dang, setDang] = useState(0); 
   const [enhanceCount, setEnhanceCount] = useState(0);
   const [duelCount, setDuelCount] = useState(10);
 
+  // 아이템 보유량
   const [weaponBoxes, setWeaponBoxes] = useState(0);        
   const [scrollBoxes, setScrollBoxes] = useState(0); 
   const [normalScrolls, setNormalScrolls] = useState(0); 
   const [blessedScrolls, setBlessedScrolls] = useState(0); 
   const [protectScrolls, setProtectScrolls] = useState(0); 
 
+  // 장비 및 인벤토리
   const [mainWeapon, setMainWeapon] = useState(null);
   const [subWeapon, setSubWeapon] = useState(null);
   const [inventory, setInventory] = useState([]); 
 
+  // 게임 진행 상태
   const [enhancingSlot, setEnhancingSlot] = useState(null);
   const [activeGacha, setActiveGacha] = useState(null); 
   const [popupMsg, setPopupMsg] = useState(null);
@@ -100,6 +114,7 @@ export default function GameLobby() {
   const [loadingRank, setLoadingRank] = useState(false);
   const [duelingTarget, setDuelingTarget] = useState(null); 
 
+  // --- UI 디자인 설정 ---
   const gradeCardStyles = {
     normal: 'border-gray-500 bg-gray-900/40 shadow-[inset_0_0_10px_rgba(156,163,175,0.1)]',
     magic: 'border-green-400 bg-green-950/10 shadow-[inset_0_0_10px_rgba(74,222,128,0.2)]',
@@ -110,12 +125,11 @@ export default function GameLobby() {
   const gradeTextColors = { normal: 'text-gray-400', magic: 'text-green-400', rare: 'text-blue-400 font-extrabold', epic: 'text-purple-400 font-extrabold', legendary: 'text-yellow-400 font-extrabold' };
   const getGradeLabel = (grade) => ({ normal: '일반', magic: '마법', rare: '희귀', epic: '에픽', legendary: '전설' }[grade] || '일반');
   
-  // 💡 [핵심] 강화 레벨별 차별화된 시각적 임팩트 적용
   const getAuraEffect = (level) => {
-    if (level >= 15) return 'drop-shadow(0 0 25px rgba(250, 204, 21, 1)) scale-125 animate-pulse'; // 15강~: 황금빛 진동
-    if (level >= 10) return 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)) scale-110'; // 10강~: 강렬한 붉은빛
-    if (level >= 5) return 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)) scale-105'; // 5강~: 은은한 푸른빛
-    return 'transition-all duration-300'; // 0~4강: 기본
+    if (level >= 15) return 'drop-shadow(0 0 25px rgba(250, 204, 21, 1)) scale-125 animate-pulse'; 
+    if (level >= 10) return 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)) scale-110'; 
+    if (level >= 5) return 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)) scale-105'; 
+    return 'transition-all duration-300'; 
   };
 
   const loadGameData = useCallback(async (userId) => {
@@ -330,7 +344,7 @@ export default function GameLobby() {
         await supabase.from('weapons').insert(newWeapons).then(checkDB);
 
         setTimeout(async () => {
-          let msg = `⚔️ 상자 ${openCount}개 개봉 완료!\n\n`;
+          let msg = `⚔️ 스폰서 보상: 상자 ${openCount}개 개봉 완료!\n\n`;
           if (resultCounts.legendary) msg += `🟨 전설: ${resultCounts.legendary}개\n`;
           if (resultCounts.epic) msg += `🟪 에픽: ${resultCounts.epic}개\n`;
           if (resultCounts.rare) msg += `🟦 희귀: ${resultCounts.rare}개\n`;
@@ -511,22 +525,12 @@ export default function GameLobby() {
   const subMaxProtect = subWeapon ? WEAPON_CONFIG[subWeapon.weapon_grade].protect : 3;
   const subCurrentProtect = subWeapon ? Math.min(subWeapon.protect_count, subMaxProtect) : 0;
 
-  // 💡 [핵심] 준비하신 이미지를 띄워줄 공통 함수 생성
-  // 만약 public/images 폴더에 이미지가 없다면, onErrror 이벤트를 통해 기존 이모지가 나오도록 fallback 설정
   const renderWeaponImage = (weaponGrade, enhancementLevel, sizeClass) => {
     const auraClass = getAuraEffect(enhancementLevel);
-    // 이미지 파일명 규칙: public/images/weapon_normal.png, weapon_magic.png 등
     const imagePath = `/images/weapon_${weaponGrade}.png`;
-    
     return (
       <div className={`relative flex items-center justify-center ${sizeClass} ${auraClass}`}>
-        <img 
-          src={imagePath} 
-          alt={`${weaponGrade} weapon`} 
-          className="w-full h-full object-contain"
-          // 이미지가 없을 때를 대비한 처리 (에러 시 숨김)
-          onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} 
-        />
+        <img src={imagePath} alt={`${weaponGrade} weapon`} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
         <span className="hidden text-5xl" style={{ display: 'none' }}>🗡️</span>
       </div>
     );
@@ -546,7 +550,8 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
+    /* 💡 [수정] 모바일 화면 잘림 완벽 방지: 전체 높이를 100dvh로 완전 고정 */
+    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ height: '100dvh' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -590,7 +595,6 @@ export default function GameLobby() {
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
             </div>
             
-            {/* 메인 무기 영역 */}
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
               <div className="flex justify-between items-start shrink-0">
                 <div className="flex flex-col">
@@ -607,7 +611,6 @@ export default function GameLobby() {
                 </div>
               </div>
               
-              {/* 💡 [적용 완료] 무기 이미지 연동 및 아우라 효과 부분 */}
               <div className="flex-1 flex justify-center items-center py-1">
                 {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-24 h-24') : <div className="text-5xl">❌</div>}
               </div>
@@ -619,7 +622,6 @@ export default function GameLobby() {
 
             <div className="flex justify-center -my-2.5 z-20 shrink-0"><button disabled={isProcessing} onClick={handleSwap} className="bg-gray-800 border-2 border-gray-500 text-[9px] font-bold px-3 py-1 rounded-full shadow-2xl active:scale-95 text-white disabled:opacity-50">⬆️ 무기 교체 ⬇️</button></div>
 
-            {/* 서브 무기 영역 */}
             <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
               <div className="flex justify-between items-start shrink-0">
                 <div className="flex flex-col">
@@ -636,7 +638,6 @@ export default function GameLobby() {
                 </div>
               </div>
               
-              {/* 💡 [적용 완료] 서브 무기 이미지 연동 및 아우라 효과 부분 */}
               <div className="flex-1 flex justify-center items-center py-1">
                  {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-20 h-20') : <div className="text-5xl">❌</div>}
               </div>
@@ -648,12 +649,11 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* --- 인벤토리 탭 --- */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col gap-2 pb-2 h-full">
+          <div className="flex flex-col gap-1.5 pb-6 min-h-full">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
-                  <h2 className="text-xs font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
+                  <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
                   <button onClick={() => setIsMultiSellModalOpen(true)} disabled={isProcessing} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50">일괄 판매 🗑️</button>
               </div>
               <div className="grid grid-cols-5 gap-1 px-2">
@@ -663,7 +663,6 @@ export default function GameLobby() {
                       return (
                           <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`aspect-square cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
                              <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
-                             {/* 💡 [적용 완료] 인벤토리 작은 썸네일 이미지 연동 */}
                              {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-6 h-6 my-0.5')}
                              <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
                           </div>
@@ -674,38 +673,37 @@ export default function GameLobby() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0">
-              <h2 className="text-[10px] font-bold text-yellow-400 mb-1">🛒 포인트 상점</h2>
+            <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col shrink-0">
+              <h2 className="text-[10px] font-bold text-yellow-400 mb-1">🛒 상점</h2>
               <div className="flex gap-2">
-                  {[ { type: 'scroll', name: '의문의 주문서', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
+                  {[ { type: 'scroll', name: '의문 주문서', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
                      { type: 'weapon', name: '고급 무기', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
-                      <div key={item.type} className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col justify-between">
-                          <p className="text-[9px] font-bold text-gray-300 mb-1">{item.name} 상자</p>
+                      <div key={item.type} className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col justify-between">
+                          <p className="text-[9px] font-bold text-gray-300 mb-1">{item.name}</p>
                           <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
-                            <span className="text-xs font-black w-6 text-center">{item.qty}</span>
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
+                            <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-5 h-5 flex items-center justify-center bg-gray-700 rounded text-xs font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                            <span className="text-[10px] font-black w-5 text-center">{item.qty}</span>
+                            <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-5 h-5 flex items-center justify-center bg-gray-700 rounded text-xs font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
                           </div>
-                          <button disabled={isProcessing} onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50">구매 ({item.cost * item.qty}댕)</button>
+                          <button disabled={isProcessing} onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[9px] py-1 rounded text-white active:bg-yellow-500 shadow-sm disabled:opacity-50">구매 ({item.cost * item.qty}댕)</button>
                       </div>
                   ))}
               </div>
             </div>
             
-            <div className="flex flex-col gap-1 px-2 mt-auto shrink-0 pb-1">
-              <div className="flex gap-1">
-                <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 주문서 1개 열기</button>
-                <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 주문서 모두 열기 ({scrollBoxes})</button>
+            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-2">
+              <div className="flex gap-1.5">
+                <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded-lg text-[9px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
+                <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-[9px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
               </div>
-              <div className="flex gap-1">
-                <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">🗡️ 무기 1개 열기</button>
-                <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">⚔️ 무기 모두 열기 ({weaponBoxes})</button>
+              <div className="flex gap-1.5">
+                <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded-lg text-[9px] font-black shadow-sm disabled:opacity-50">🗡️ 1개 열기</button>
+                <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg text-[9px] font-black shadow-sm disabled:opacity-50">⚔️ 모두 열기 ({weaponBoxes})</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* --- 아레나, 가이드 탭 코드는 이전 버전과 완전히 동일합니다 --- */}
         {activeTab === 'arena' && (
           <div className="flex flex-col h-full gap-2">
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
@@ -783,12 +781,11 @@ export default function GameLobby() {
 
       <nav className="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50 relative">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
-        <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고</button>
+        <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('guide')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'guide' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📖</span>도움말</button>
       </nav>
 
-      {/* --- 모달 팝업 영역 코드는 이전 버전과 완전히 동일합니다 --- */}
       {duelingTarget && (
         <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[120] p-6 text-center">
           <div className="flex items-center gap-6 mb-8"><div className="flex items-center flex-col"><span className="text-5xl">🛡️</span><span className="text-blue-400 font-black mt-3 text-lg">나</span></div><span className="text-6xl animate-bounce">⚔️</span><div className="flex items-center flex-col"><span className="text-5xl">😈</span><span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span></div></div>
@@ -822,7 +819,6 @@ export default function GameLobby() {
           <div className={`bg-gray-900 border-2 rounded-xl p-5 w-full max-w-sm text-center shadow-2xl ${gradeCardStyles[selectedInvItem.weapon_grade]}`}>
              <span className={`text-[11px] font-black tracking-wider ${gradeTextColors[selectedInvItem.weapon_grade]}`}>[{getGradeLabel(selectedInvItem.weapon_grade)}]</span>
              <h2 className="text-xl font-black text-white mt-1 mb-2">+{selectedInvItem.enhancement_level} {selectedInvItem.name}</h2>
-             {/* 모달 팝업 내부에도 이미지 연동 */}
              <div className="flex justify-center mb-4">
                 {renderWeaponImage(selectedInvItem.weapon_grade, selectedInvItem.enhancement_level, 'w-16 h-16')}
              </div>
