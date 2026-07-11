@@ -37,13 +37,13 @@ const checkDB = (res) => {
   return res;
 };
 
-// 무기 등급별 밸런스 설정 테이블
+// 💡 [수정됨] 무기 등급별 밸런스 설정 테이블 (기하급수적 스탯 인플레이션 적용)
 const WEAPON_CONFIG = {
-  normal: { baseAtk: 10, gainMin: 2, gainMax: 5, protect: 3, basePrice: 100 },
-  magic: { baseAtk: 25, gainMin: 4, gainMax: 8, protect: 3, basePrice: 300 },
-  rare: { baseAtk: 60, gainMin: 8, gainMax: 15, protect: 3, basePrice: 1000 },
-  epic: { baseAtk: 150, gainMin: 20, gainMax: 40, protect: 2, basePrice: 5000 },
-  legendary: { baseAtk: 400, gainMin: 50, gainMax: 100, protect: 1, basePrice: 20000 }
+  normal: { baseAtk: 20, gainMin: 5, gainMax: 15, protect: 3, basePrice: 100, limitMult: 1 },
+  magic: { baseAtk: 100, gainMin: 30, gainMax: 80, protect: 3, basePrice: 300, limitMult: 5 },
+  rare: { baseAtk: 500, gainMin: 150, gainMax: 400, protect: 3, basePrice: 1000, limitMult: 25 },
+  epic: { baseAtk: 3000, gainMin: 1000, gainMax: 2500, protect: 2, basePrice: 5000, limitMult: 150 },
+  legendary: { baseAtk: 15000, gainMin: 5000, gainMax: 15000, protect: 1, basePrice: 20000, limitMult: 1000 }
 };
 
 // 등급 및 레벨별 강화 성공 확률
@@ -125,7 +125,6 @@ export default function GameLobby() {
   const gradeTextColors = { normal: 'text-gray-400', magic: 'text-green-400', rare: 'text-blue-400 font-extrabold', epic: 'text-purple-400 font-extrabold', legendary: 'text-yellow-400 font-extrabold' };
   const getGradeLabel = (grade) => ({ normal: '일반', magic: '마법', rare: '희귀', epic: '에픽', legendary: '전설' }[grade] || '일반');
   
-  // 💡 [수정] 임팩트 렌더링 무조건 보장 (Tailwind 클래스 + 인라인 스타일 분리)
   const getAuraClass = (level) => {
     if (level >= 15) return 'scale-125 animate-pulse transition-all duration-300 z-10'; 
     if (level >= 10) return 'scale-110 transition-all duration-300 z-10'; 
@@ -475,7 +474,7 @@ export default function GameLobby() {
     if (isProtecting) pUpdates.protect_scrolls = protectScrolls - 1;
     
     try { await supabase.from('game_profiles').update(pUpdates).eq('id', user).then(checkDB); } 
-    catch(err) { alert("오류: " + err.message); setEnhancingSlot(null); setIsProcessing(false); return; }
+    catch(err) { alert("주문서 사용 실패: " + err.message); setEnhancingSlot(null); setIsProcessing(false); return; }
     
     setTimeout(async () => {
       try {
@@ -489,14 +488,21 @@ export default function GameLobby() {
           const config = WEAPON_CONFIG[targetWeapon.weapon_grade];
           let totalBaseGain = 0;
           for(let i=0; i<plus; i++) totalBaseGain += Math.floor(Math.random() * (config.gainMax - config.gainMin + 1)) + config.gainMin;
+          
           let randomBonus = 0; let bonusMsg = '';
+          // 💡 [수정됨] 한계돌파 시 무기 등급에 따른 폭발적인 스탯 증가
           if (newLvl >= 10) {
-            randomBonus = Math.floor(Math.random() * 100) + 1;
+            const limitMult = config.limitMult || 1;
+            // 기본 10~50 범위에 무기 등급 배수를 곱함
+            randomBonus = (Math.floor(Math.random() * 41) + 10) * limitMult;
             if (selectedScrollType === 'blessed') randomBonus *= 2; 
-            bonusMsg = `\n(✨ 한계돌파 보너스 +${randomBonus})`;
+            bonusMsg = `\n(✨ 등급 한계돌파 보너스 +${randomBonus.toLocaleString()})`;
           }
-          const addedAtk = totalBaseGain + randomBonus; const newAtk = targetWeapon.attack + addedAtk;
-          resultMsg = `🎉 강화 성공! (+${plus})\n공격력 [${addedAtk}] 상승!${bonusMsg}`;
+          
+          const addedAtk = totalBaseGain + randomBonus; 
+          const newAtk = targetWeapon.attack + addedAtk;
+          
+          resultMsg = `🎉 강화 성공! (+${plus})\n공격력 [${addedAtk.toLocaleString()}] 상승!${bonusMsg}`;
           
           await supabase.from('weapons').update({ enhancement_level: newLvl, attack: newAtk, protect_count: nextProtectCount }).eq('id', targetWeapon.id).then(checkDB);
           await supabase.from('game_profiles').update({ enhance_count: enhanceCount + 1, updated_ts: Date.now() }).eq('id', user).then(checkDB);
@@ -533,7 +539,6 @@ export default function GameLobby() {
   const subMaxProtect = subWeapon ? WEAPON_CONFIG[subWeapon.weapon_grade].protect : 3;
   const subCurrentProtect = subWeapon ? Math.min(subWeapon.protect_count, subMaxProtect) : 0;
 
-  // 💡 [수정] 무기 렌더링 시 강제로 inline style을 부여하여 임팩트 표시 보장
   const renderWeaponImage = (weaponGrade, enhancementLevel, sizeClass) => {
     const auraClass = getAuraClass(enhancementLevel);
     const auraStyle = getAuraStyle(enhancementLevel);
@@ -560,7 +565,7 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ bottom: '65px' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -577,11 +582,11 @@ export default function GameLobby() {
         </div>
       )}
 
-      <header className="flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800 shrink-0">
+      <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
         <h1 className="font-black text-lg text-yellow-500 tracking-wider">강화의 신</h1>
       </header>
       
-      <div className="bg-gray-800 px-3 py-1.5 flex justify-between items-center shrink-0 shadow-md">
+      <div className="shrink-0 bg-gray-800 px-3 py-1.5 flex justify-between items-center shadow-md">
         <div className="flex flex-col justify-center">
           <span className="text-[12px] font-black text-white truncate max-w-[100px]">{nickname}</span>
           <div className="flex items-center gap-2">
@@ -596,10 +601,10 @@ export default function GameLobby() {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto p-2 min-h-0 flex flex-col">
+      <main className="flex-1 min-h-0 flex flex-col bg-gray-950 p-2">
         {activeTab === 'enhance' && (
-          <div className="flex flex-col flex-1 gap-1 justify-between min-h-[450px]">
-            <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
+          <div className="flex flex-col flex-1 gap-1.5">
+            <div className="flex gap-1 shrink-0 p-1 bg-gray-950">
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
             </div>
@@ -658,9 +663,8 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [UI 구조 개편] 구매 영역 하단에 열기 버튼을 통합 배치 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col gap-2 flex-1 pb-2">
+          <div className="flex flex-col flex-1 overflow-y-auto gap-2">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -683,12 +687,10 @@ export default function GameLobby() {
               </div>
             </div>
 
-            {/* 상점 및 아이템 사용을 합친 레이아웃 */}
             <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2">
               <h2 className="text-[11px] font-bold text-yellow-400 mb-2">🛒 상점 및 뽑기</h2>
               <div className="flex gap-2">
                 
-                {/* 주문서 구역 */}
                 <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
                   <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
                   <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
@@ -698,7 +700,6 @@ export default function GameLobby() {
                   </div>
                   <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({300 * buyQtyScroll}댕)</button>
                   
-                  {/* 주문서 열기 통합 */}
                   <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
                     <p className="text-[9px] text-gray-400 mb-0.5">보유: {scrollBoxes}개</p>
                     <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
@@ -706,7 +707,6 @@ export default function GameLobby() {
                   </div>
                 </div>
 
-                {/* 고급 무기 구역 */}
                 <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
                   <p className="text-[10px] font-bold text-gray-300 mb-1">🗡️ 고급 무기</p>
                   <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
@@ -716,7 +716,6 @@ export default function GameLobby() {
                   </div>
                   <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({1000 * buyQtyWeapon}댕)</button>
                   
-                  {/* 무기 열기 통합 */}
                   <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
                     <p className="text-[9px] text-gray-400 mb-0.5">보유: {weaponBoxes}개</p>
                     <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
@@ -778,13 +777,14 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 [수정] 도움말 UI 업데이트 - 변경된 한계돌파 보너스 설명 적용 */}
         {activeTab === 'guide' && (
-          <div className="flex flex-col flex-1 gap-3 pb-4 text-[11px]">
-            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
+          <div className="flex flex-col flex-1 overflow-y-auto gap-3 text-[11px] pb-4">
+            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
               <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
-              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">+1~100 랜덤 보너스 공격력</span>이 추가됩니다. 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배(+2~200)</span>로 증폭되니 반드시 모아두세요!</p>
+              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배</span>로 증폭되니 반드시 모아두세요!</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
               <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
               <table className="w-full text-center border-collapse">
                 <thead><tr className="bg-gray-950 text-gray-400 text-[9px]"><th className="py-1 border border-gray-800">무기 등급</th><th className="border border-gray-800">1~4강</th><th className="border border-gray-800">5~9강</th><th className="border border-gray-800">10강 이상</th></tr></thead>
@@ -796,7 +796,7 @@ export default function GameLobby() {
                 </tbody>
               </table>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 shrink-0">
               <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-emerald-400 mb-1 text-xs">🗡️ 무기 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>⬜ 일반:</span><span className="font-mono">78.9%</span></li><li className="flex justify-between"><span>🟩 마법:</span><span className="font-mono">15.0%</span></li><li className="flex justify-between"><span>🟦 희귀:</span><span className="font-mono">5.0%</span></li><li className="flex justify-between"><span>🟪 에픽:</span><span className="font-mono">1.0%</span></li><li className="flex justify-between text-yellow-400 font-bold"><span>🟨 전설:</span><span className="font-mono">0.1%</span></li></ul></div>
               <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-indigo-400 mb-1 text-xs">📦 주문서 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>📜 일반:</span><span className="font-mono">70.0%</span></li><li className="flex justify-between text-cyan-400 font-bold"><span>✨ 축복:</span><span className="font-mono">20.0%</span></li><li className="flex justify-between text-blue-400 font-bold"><span>🛡️ 파괴방지:</span><span className="font-mono">10.0%</span></li></ul></div>
             </div>
