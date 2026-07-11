@@ -125,11 +125,19 @@ export default function GameLobby() {
   const gradeTextColors = { normal: 'text-gray-400', magic: 'text-green-400', rare: 'text-blue-400 font-extrabold', epic: 'text-purple-400 font-extrabold', legendary: 'text-yellow-400 font-extrabold' };
   const getGradeLabel = (grade) => ({ normal: '일반', magic: '마법', rare: '희귀', epic: '에픽', legendary: '전설' }[grade] || '일반');
   
-  const getAuraEffect = (level) => {
-    if (level >= 15) return 'drop-shadow(0 0 25px rgba(250, 204, 21, 1)) scale-125 animate-pulse'; 
-    if (level >= 10) return 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)) scale-110'; 
-    if (level >= 5) return 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)) scale-105'; 
+  // 💡 [수정] 임팩트 렌더링 무조건 보장 (Tailwind 클래스 + 인라인 스타일 분리)
+  const getAuraClass = (level) => {
+    if (level >= 15) return 'scale-125 animate-pulse transition-all duration-300 z-10'; 
+    if (level >= 10) return 'scale-110 transition-all duration-300 z-10'; 
+    if (level >= 5) return 'scale-105 transition-all duration-300'; 
     return 'transition-all duration-300'; 
+  };
+  
+  const getAuraStyle = (level) => {
+    if (level >= 15) return { filter: 'drop-shadow(0px 0px 25px rgba(250, 204, 21, 1))' };
+    if (level >= 10) return { filter: 'drop-shadow(0px 0px 15px rgba(239, 68, 68, 1))' };
+    if (level >= 5) return { filter: 'drop-shadow(0px 0px 15px rgba(59, 130, 246, 0.8))' };
+    return {};
   };
 
   const loadGameData = useCallback(async (userId) => {
@@ -525,11 +533,13 @@ export default function GameLobby() {
   const subMaxProtect = subWeapon ? WEAPON_CONFIG[subWeapon.weapon_grade].protect : 3;
   const subCurrentProtect = subWeapon ? Math.min(subWeapon.protect_count, subMaxProtect) : 0;
 
+  // 💡 [수정] 무기 렌더링 시 강제로 inline style을 부여하여 임팩트 표시 보장
   const renderWeaponImage = (weaponGrade, enhancementLevel, sizeClass) => {
-    const auraClass = getAuraEffect(enhancementLevel);
+    const auraClass = getAuraClass(enhancementLevel);
+    const auraStyle = getAuraStyle(enhancementLevel);
     const imagePath = `/images/weapon_${weaponGrade}.png`;
     return (
-      <div className={`relative flex items-center justify-center ${sizeClass} ${auraClass}`}>
+      <div className={`relative flex items-center justify-center ${sizeClass} ${auraClass}`} style={auraStyle}>
         <img src={imagePath} alt={`${weaponGrade} weapon`} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
         <span className="hidden text-5xl" style={{ display: 'none' }}>🗡️</span>
       </div>
@@ -610,7 +620,6 @@ export default function GameLobby() {
                 </div>
               </div>
               
-              {/* 💡 본장비 이미지 크기 대폭 확대 (w-24 -> w-44) */}
               <div className="flex-1 flex justify-center items-center py-1">
                 {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-44 h-44 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
               </div>
@@ -638,7 +647,6 @@ export default function GameLobby() {
                 </div>
               </div>
               
-              {/* 💡 서브장비 이미지 크기 대폭 확대 (w-20 -> w-32) */}
               <div className="flex-1 flex justify-center items-center py-1">
                  {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
               </div>
@@ -650,8 +658,9 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 [UI 구조 개편] 구매 영역 하단에 열기 버튼을 통합 배치 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col flex-1 gap-2">
+          <div className="flex flex-col gap-2 flex-1 pb-2">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -664,7 +673,6 @@ export default function GameLobby() {
                       return (
                           <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`aspect-square cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
                              <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
-                             {/* 💡 가방 리스트 안의 무기도 살짝 크게 (w-6 -> w-8) */}
                              {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-8 h-8 my-0.5')}
                              <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
                           </div>
@@ -675,32 +683,47 @@ export default function GameLobby() {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0">
-              <h2 className="text-[10px] font-bold text-yellow-400 mb-1">🛒 상점</h2>
+            {/* 상점 및 아이템 사용을 합친 레이아웃 */}
+            <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2">
+              <h2 className="text-[11px] font-bold text-yellow-400 mb-2">🛒 상점 및 뽑기</h2>
               <div className="flex gap-2">
-                  {[ { type: 'scroll', name: '의문 주문서', cost: 300, qty: buyQtyScroll, setQty: setBuyQtyScroll }, 
-                     { type: 'weapon', name: '고급 무기', cost: 1000, qty: buyQtyWeapon, setQty: setBuyQtyWeapon } ].map(item => (
-                      <div key={item.type} className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col justify-between">
-                          <p className="text-[9px] font-bold text-gray-300 mb-1">{item.name}</p>
-                          <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
-                            <span className="text-xs font-black w-6 text-center">{item.qty}</span>
-                            <button disabled={isProcessing} onClick={() => item.setQty(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
-                          </div>
-                          <button disabled={isProcessing} onClick={() => handleBuyBox(item.type, item.cost, item.qty)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50">구매 ({item.cost * item.qty}댕)</button>
-                      </div>
-                  ))}
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2 px-2 mt-auto shrink-0 pb-2">
-              <div className="flex gap-2">
-                <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
-                <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">🗡️ 1개 열기</button>
-                <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">⚔️ 모두 열기 ({weaponBoxes})</button>
+                
+                {/* 주문서 구역 */}
+                <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
+                  <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
+                  <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
+                    <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                    <span className="text-xs font-black w-6 text-center">{buyQtyScroll}</span>
+                    <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
+                  </div>
+                  <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({300 * buyQtyScroll}댕)</button>
+                  
+                  {/* 주문서 열기 통합 */}
+                  <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
+                    <p className="text-[9px] text-gray-400 mb-0.5">보유: {scrollBoxes}개</p>
+                    <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                    <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                  </div>
+                </div>
+
+                {/* 고급 무기 구역 */}
+                <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
+                  <p className="text-[10px] font-bold text-gray-300 mb-1">🗡️ 고급 무기</p>
+                  <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
+                    <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                    <span className="text-xs font-black w-6 text-center">{buyQtyWeapon}</span>
+                    <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
+                  </div>
+                  <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({1000 * buyQtyWeapon}댕)</button>
+                  
+                  {/* 무기 열기 통합 */}
+                  <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
+                    <p className="text-[9px] text-gray-400 mb-0.5">보유: {weaponBoxes}개</p>
+                    <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                    <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -781,7 +804,7 @@ export default function GameLobby() {
         )}
       </main>
 
-      <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex mt-auto z-50">
+      <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex relative z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
@@ -816,7 +839,6 @@ export default function GameLobby() {
         </div>
       )}
 
-      {/* 💡 상세창 모달 안의 무기도 큼직하게 (w-16 -> w-40) */}
       {selectedInvItem && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-6">
           <div className={`bg-gray-900 border-2 rounded-xl p-5 w-full max-w-sm text-center shadow-2xl ${gradeCardStyles[selectedInvItem.weapon_grade]}`}>
