@@ -304,7 +304,6 @@ export default function GameLobby() {
     } catch (err) { alert("상점 구매 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
-  // 💡 [수정] 대표님 피드백 반영: 최소 회생 자금 2,000 댕 지급
   const handleWatchAdForDang = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
@@ -313,7 +312,7 @@ export default function GameLobby() {
     setTimeout(async () => {
       setShowingAd(false);
       try {
-        const reward = 2000; // 무기 1개(1000) + 주문서 3개(900) 구입 가능한 완벽한 회생 시동금
+        const reward = 2000; 
         await supabase.from('game_profiles').update({ dang: dang + reward }).eq('id', user).then(checkDB);
         setPopupMsg(`📺 광고 시청 보상 도착!\n\n지원금 ${reward.toLocaleString()} 댕이 지급되었습니다.\n무기를 다시 강화하여 재테크에 도전하세요!`);
         await loadGameData(user);
@@ -592,9 +591,9 @@ export default function GameLobby() {
   if (loading) return <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6 font-bold">서버 연결 중...</div>;
 
   if (showIntro) return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col items-center justify-center bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-50 px-6" style={{ height: 'calc(100dvh - 50px)' }}>
+    <div className="fixed inset-0 w-full flex flex-col items-center justify-center bg-gray-950 text-white font-sans overflow-hidden z-50 px-6">
       <div className="text-center mb-8"><div className="text-7xl mb-4">🗡️</div><h1 className="text-4xl font-black text-yellow-500 mb-2 tracking-wider">강화의 신</h1></div>
-      <div className="w-full bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center shadow-xl">
+      <div className="w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center shadow-xl">
         <h2 className="text-gray-300 text-xs font-bold mb-3">닉네임을 입력하세요</h2>
         <input type="text" value={tempNickname} onChange={(e) => setTempNickname(e.target.value)} maxLength={10} className="w-full bg-gray-950 border-2 border-gray-700 rounded-xl p-4 text-center text-white font-black text-lg mb-6 focus:border-yellow-500 outline-none transition-colors" placeholder="예: 대장장이" />
         <button onClick={handleStartNewGame} disabled={isProcessing} className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-black py-4 rounded-xl text-sm shadow-md transition-colors disabled:opacity-50">대장간 입장하기</button>
@@ -603,325 +602,357 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ bottom: '65px' }}>
-      
-      {showingAd && (
-        <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
-          <span className="text-6xl mb-4 animate-bounce">📺</span>
-          <h2 className="text-2xl font-black text-white mb-2">스폰서 광고 재생 중...</h2>
-          <p className="text-gray-400 text-sm mb-8">잠시 후 보상이 지급됩니다.</p>
-          <div className="w-48 h-2 bg-gray-800 rounded-full overflow-hidden flex"><div className="h-full bg-yellow-500 w-full animate-pulse"></div></div>
-        </div>
-      )}
-
-      {isProcessing && !showingAd && (
-        <div className="fixed inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
-           <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">🔄 동기화 중...</span>
-        </div>
-      )}
-
-      <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
-        <h1 className="font-black text-lg text-yellow-500 tracking-wider">강화의 신</h1>
-      </header>
-      
-      <div className="shrink-0 bg-gray-800 px-3 py-1.5 flex justify-between items-center shadow-md">
-        <div className="flex flex-col justify-center">
-          <span className="text-[12px] font-black text-white truncate max-w-[100px]">{nickname}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-yellow-400 font-black text-xs">💰 {dang.toLocaleString()} 댕</span>
-            <span className="text-red-400 font-black text-[10px]">🏆 {points.toLocaleString()} P</span>
-          </div>
-        </div>
-        <div className="flex gap-2 text-[10px] font-bold">
-          <span className="text-gray-300">📜: {normalScrolls}</span>
-          <span className="text-cyan-300">✨: {blessedScrolls}</span>
-          <span className="text-blue-400">🛡️: {protectScrolls}</span>
-        </div>
-      </div>
-
-      <main className="flex-1 min-h-0 flex flex-col bg-gray-950 p-2">
-        {activeTab === 'enhance' && (
-          <div className="flex flex-col flex-1 gap-1.5">
-            <div className="flex gap-1 shrink-0 p-1 bg-gray-950">
-              <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
-              <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
-            </div>
-            
-            <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
-              <div className="flex justify-between items-start shrink-0">
-                <div className="flex flex-col">
-                  <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span>
-                  <h3 className={`text-xs font-black ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>{mainWeapon ? `+${mainWeapon.enhancement_level} ${mainWeapon.name}` : '무기를 장착하세요'}</h3>
-                  <div className="mt-1 bg-gray-950 px-1.5 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {mainWeapon?.attack?.toLocaleString() || 0}</p></div>
-                </div>
-                <div className="text-right flex flex-col items-end">
-                  <label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1.5 py-1 rounded border border-gray-700 cursor-pointer">
-                    <input type="checkbox" checked={useProtectMain} disabled={isProcessing} onChange={(e) => setUseProtectMain(e.target.checked)} className="w-3 h-3 accent-blue-500" />
-                    <span>파괴방지 적용</span>
-                  </label>
-                  <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainCurrentProtect} / {mainMaxProtect}</span></p>
-                </div>
-              </div>
-              
-              <div className="flex-1 flex justify-center items-center py-1">
-                {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-44 h-44 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
-              </div>
-
-              <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
-                {!mainWeapon ? '장착된 무기 없음' : enhancingSlot === 'main' ? '강화 진행 중...' : `[본장비] 강화 시도 (${getSuccessRate(mainWeapon.weapon_grade, mainWeapon.enhancement_level)}%)`}
-              </button>
-            </div>
-
-            <div className="flex justify-center -my-2.5 z-20 shrink-0"><button disabled={isProcessing} onClick={handleSwap} className="bg-gray-800 border-2 border-gray-500 text-[9px] font-bold px-3 py-1 rounded-full shadow-2xl active:scale-95 text-white disabled:opacity-50">⬆️ 무기 교체 ⬇️</button></div>
-
-            <div className={`flex-1 flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
-              <div className="flex justify-between items-start shrink-0">
-                <div className="flex flex-col">
-                  <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span>
-                  <h3 className={`text-xs font-black ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>{subWeapon ? `+${subWeapon.enhancement_level} ${subWeapon.name}` : '무기를 장착하세요'}</h3>
-                  <div className="mt-0.5 bg-gray-950 px-1 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {subWeapon?.attack?.toLocaleString() || 0}</p></div>
-                </div>
-                <div className="text-right flex flex-col items-end">
-                  <label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1 py-0.5 rounded border border-gray-700 cursor-pointer">
-                    <input type="checkbox" checked={useProtectSub} disabled={isProcessing} onChange={(e) => setUseProtectSub(e.target.checked)} className="w-3 h-3 accent-blue-500" />
-                    <span>파괴방지 적용</span>
-                  </label>
-                  <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subCurrentProtect} / {subMaxProtect}</span></p>
-                </div>
-              </div>
-              
-              <div className="flex-1 flex justify-center items-center py-1">
-                 {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
-              </div>
-
-              <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
-                {!subWeapon ? '장착된 무기 없음' : enhancingSlot === 'sub' ? '강화 진행 중...' : `[서브장비] 강화 시도 (${getSuccessRate(subWeapon.weapon_grade, subWeapon.enhancement_level)}%)`}
-              </button>
-            </div>
+    /* 💡 [수정] dvh를 사용하여 전체 화면을 채우고, 내부에서만 스크롤되도록 완벽 반응형 구조로 변경 */
+    <div className="fixed inset-0 w-full bg-black flex justify-center z-40">
+      <div className="w-full max-w-md h-[100dvh] flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl relative">
+        
+        {showingAd && (
+          <div className="absolute inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
+            <span className="text-6xl mb-4 animate-bounce">📺</span>
+            <h2 className="text-2xl font-black text-white mb-2">스폰서 광고 재생 중...</h2>
+            <p className="text-gray-400 text-sm mb-8">잠시 후 보상이 지급됩니다.</p>
+            <div className="w-48 h-2 bg-gray-800 rounded-full overflow-hidden flex"><div className="h-full bg-yellow-500 w-full animate-pulse"></div></div>
           </div>
         )}
 
-        {activeTab === 'inventory' && (
-          <div className="flex flex-col flex-1 overflow-y-auto gap-2 pb-2">
-            <div className="shrink-0">
-              <div className="flex justify-between items-center mb-1 px-2">
-                  <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
-                  <button onClick={() => setIsMultiSellModalOpen(true)} disabled={isProcessing} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50">일괄 판매 🗑️</button>
-              </div>
-              <div className="grid grid-cols-5 gap-1 px-2">
-                {Array(20).fill(0).map((_, i) => {
-                  const item = inventory[i];
-                  if (item) {
-                      return (
-                          <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`aspect-square cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
-                             <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
-                             {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-8 h-8 my-0.5')}
-                             <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
-                          </div>
-                      );
-                  }
-                  return <div key={`empty-${i}`} className="aspect-square bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
-                })}
-              </div>
-            </div>
-
-            {/* 💡 [수정] 상점 영역에 무료 댕 충전(광고) 버튼 추가 (2,000댕) */}
-            <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
-                <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
-              </div>
-              
-              <div className="flex gap-2">
-                <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
-                  <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
-                  <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
-                    <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
-                    <span className="text-xs font-black w-6 text-center">{buyQtyScroll}</span>
-                    <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
-                  </div>
-                  <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({300 * buyQtyScroll}댕)</button>
-                  
-                  <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
-                    <p className="text-[9px] text-gray-400 mb-0.5">보유: {scrollBoxes}개</p>
-                    <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                    <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
-                  </div>
-                </div>
-
-                <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
-                  <p className="text-[10px] font-bold text-gray-300 mb-1">🗡️ 고급 무기</p>
-                  <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
-                    <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
-                    <span className="text-xs font-black w-6 text-center">{buyQtyWeapon}</span>
-                    <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
-                  </div>
-                  <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({1000 * buyQtyWeapon}댕)</button>
-                  
-                  <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
-                    <p className="text-[9px] text-gray-400 mb-0.5">보유: {weaponBoxes}개</p>
-                    <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                    <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+        {isProcessing && !showingAd && (
+          <div className="absolute inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
+            <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">🔄 동기화 중...</span>
           </div>
         )}
 
-        {activeTab === 'arena' && (
-          <div className="flex flex-col flex-1 gap-2 pb-2">
-            <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
-              <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
-              <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
+        <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
+          <h1 className="font-black text-lg text-yellow-500 tracking-wider">강화의 신</h1>
+        </header>
+        
+        <div className="shrink-0 bg-gray-800 px-3 py-1.5 flex justify-between items-center shadow-md">
+          <div className="flex flex-col justify-center">
+            <span className="text-[12px] font-black text-white truncate max-w-[100px]">{nickname}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-400 font-black text-xs">💰 {dang.toLocaleString()} 댕</span>
+              <span className="text-red-400 font-black text-[10px]">🏆 {points.toLocaleString()} P</span>
             </div>
+          </div>
+          <div className="flex gap-2 text-[10px] font-bold">
+            <span className="text-gray-300">📜: {normalScrolls}</span>
+            <span className="text-cyan-300">✨: {blessedScrolls}</span>
+            <span className="text-blue-400">🛡️: {protectScrolls}</span>
+          </div>
+        </div>
 
-            <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
-              <button disabled={isProcessing} onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
-              <button disabled={isProcessing} onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
-              <button disabled={isProcessing} onClick={() => setRankType('points')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'points' ? 'bg-yellow-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🏆 결투 포인트</button>
+        {/* 💡 [수정] main 태그가 남은 영역을 모두 차지하고, 넘치면 스스로 스크롤 생성 (min-h-0 필수) */}
+        <main className="flex-1 overflow-y-auto min-h-0 bg-gray-950 p-2">
+          {activeTab === 'enhance' && (
+            <div className="flex flex-col gap-2 min-h-full pb-2">
+              <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
+                <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
+                <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
+              </div>
+              
+              <div className={`flex flex-col border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
+                <div className="flex justify-between items-start shrink-0">
+                  <div className="flex flex-col">
+                    <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span>
+                    <h3 className={`text-xs font-black ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>{mainWeapon ? `+${mainWeapon.enhancement_level} ${mainWeapon.name}` : '무기를 장착하세요'}</h3>
+                    <div className="mt-1 bg-gray-950 px-1.5 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {mainWeapon?.attack?.toLocaleString() || 0}</p></div>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1.5 py-1 rounded border border-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={useProtectMain} disabled={isProcessing} onChange={(e) => setUseProtectMain(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                      <span>파괴방지 적용</span>
+                    </label>
+                    <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainCurrentProtect} / {mainMaxProtect}</span></p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center items-center py-4">
+                  {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-44 h-44 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
+                </div>
+
+                <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
+                  {!mainWeapon ? '장착된 무기 없음' : enhancingSlot === 'main' ? '강화 진행 중...' : `[본장비] 강화 시도 (${getSuccessRate(mainWeapon.weapon_grade, mainWeapon.enhancement_level)}%)`}
+                </button>
+              </div>
+
+              <div className="flex justify-center -my-3 z-20 shrink-0"><button disabled={isProcessing} onClick={handleSwap} className="bg-gray-800 border-2 border-gray-500 text-[9px] font-bold px-3 py-1 rounded-full shadow-2xl active:scale-95 text-white disabled:opacity-50">⬆️ 무기 교체 ⬇️</button></div>
+
+              <div className={`flex flex-col border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
+                <div className="flex justify-between items-start shrink-0">
+                  <div className="flex flex-col">
+                    <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span>
+                    <h3 className={`text-xs font-black ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>{subWeapon ? `+${subWeapon.enhancement_level} ${subWeapon.name}` : '무기를 장착하세요'}</h3>
+                    <div className="mt-0.5 bg-gray-950 px-1 py-0.5 rounded w-max border border-gray-700"><p className="text-[9px] font-bold text-gray-300">⚔️ 공격력: {subWeapon?.attack?.toLocaleString() || 0}</p></div>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <label className="flex items-center gap-1 text-[9px] font-bold text-gray-200 bg-gray-950 px-1 py-0.5 rounded border border-gray-700 cursor-pointer">
+                      <input type="checkbox" checked={useProtectSub} disabled={isProcessing} onChange={(e) => setUseProtectSub(e.target.checked)} className="w-3 h-3 accent-blue-500" />
+                      <span>파괴방지 적용</span>
+                    </label>
+                    <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subCurrentProtect} / {subMaxProtect}</span></p>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center items-center py-2">
+                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
+                </div>
+
+                <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
+                  {!subWeapon ? '장착된 무기 없음' : enhancingSlot === 'sub' ? '강화 진행 중...' : `[서브장비] 강화 시도 (${getSuccessRate(subWeapon.weapon_grade, subWeapon.enhancement_level)}%)`}
+                </button>
+              </div>
             </div>
-            
-            <div className="flex-1 bg-gray-800 rounded-xl overflow-y-auto border border-gray-700 p-2 shadow-inner">
-              {loadingRank ? (
-                <div className="flex justify-center items-center h-full text-gray-500 text-sm font-bold animate-pulse">랭킹 데이터를 불러오는 중...</div>
-              ) : leaderboard.length === 0 ? (
-                <div className="flex justify-center items-center h-full text-gray-500 text-sm font-bold">랭킹 데이터가 없습니다.</div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {leaderboard.map((ranker, index) => (
-                    <div key={index} className={`flex items-center justify-between p-2 rounded-lg border ${index === 0 ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]' : index < 3 ? 'bg-gray-700/50 border-gray-500' : 'bg-gray-900 border-gray-800'}`}>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={`font-black w-5 text-center shrink-0 ${index === 0 ? 'text-yellow-400 text-lg' : index === 1 ? 'text-gray-300 text-base' : index === 2 ? 'text-orange-400 text-base' : 'text-gray-500 text-xs'}`}>{index + 1}</span>
-                        <div className="flex flex-col truncate pr-2">
-                          <span className={`text-[11px] font-bold truncate ${ranker.id === user ? 'text-green-400' : 'text-gray-200'}`}>{ranker.nickname}</span>
-                          <span className={`text-[10px] truncate ${gradeTextColors[ranker.mainWeapon.weapon_grade]}`}>+{ranker.mainWeapon.enhancement_level} {ranker.mainWeapon.name}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <div className="bg-gray-950 px-1.5 py-1 rounded border border-gray-700 text-right flex flex-col justify-center min-w-[55px]">
-                          {rankType === 'attack' && <span className="text-[10px] font-black text-red-400 w-full block">⚔️ {ranker.mainWeapon.attack.toLocaleString()}</span>}
-                          {rankType === 'enhance' && <span className="text-[10px] font-black text-blue-400 w-full block">🛠️ {(ranker.enhance_count || 0).toLocaleString()}회</span>}
-                          {rankType === 'points' && <span className="text-[10px] font-black text-yellow-400 w-full block">🏆 {(ranker.points || 0).toLocaleString()}</span>}
-                        </div>
-                        {ranker.id !== user ? (
-                          <button onClick={() => handleDuel(ranker)} disabled={isProcessing} className="bg-red-700 hover:bg-red-600 px-2 py-1.5 rounded text-[10px] font-black text-white shadow-md active:scale-95 transition-transform shrink-0 disabled:opacity-50">결투 ⚔️</button>
-                        ) : (
-                          <div className="px-3 py-1.5 text-[10px] font-black text-green-400 text-center shrink-0">나 🛡️</div>
-                        )}
-                      </div>
+          )}
+
+          {activeTab === 'inventory' && (
+            <div className="flex flex-col gap-2 pb-2">
+              <div className="shrink-0">
+                <div className="flex justify-between items-center mb-1 px-2">
+                    <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
+                    <button onClick={() => setIsMultiSellModalOpen(true)} disabled={isProcessing} className="bg-red-900/50 hover:bg-red-800 text-red-300 text-[10px] font-bold px-3 py-1 rounded-lg border border-red-700 disabled:opacity-50">일괄 판매 🗑️</button>
+                </div>
+                <div className="grid grid-cols-5 gap-1 px-2">
+                  {Array(20).fill(0).map((_, i) => {
+                    const item = inventory[i];
+                    if (item) {
+                        return (
+                            <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`aspect-square cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
+                               <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
+                               {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-8 h-8 my-0.5')}
+                               <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
+                            </div>
+                        );
+                    }
+                    return <div key={`empty-${i}`} className="aspect-square bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2 mt-2">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
+                  <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
+                    <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
+                    <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
+                      <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                      <span className="text-xs font-black w-6 text-center">{buyQtyScroll}</span>
+                      <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
                     </div>
-                  ))}
+                    <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({300 * buyQtyScroll}댕)</button>
+                    
+                    <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
+                      <p className="text-[9px] text-gray-400 mb-0.5">보유: {scrollBoxes}개</p>
+                      <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                      <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
+                    <p className="text-[10px] font-bold text-gray-300 mb-1">🗡️ 고급 무기</p>
+                    <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
+                      <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
+                      <span className="text-xs font-black w-6 text-center">{buyQtyWeapon}</span>
+                      <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
+                    </div>
+                    <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({1000 * buyQtyWeapon}댕)</button>
+                    
+                    <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
+                      <p className="text-[9px] text-gray-400 mb-0.5">보유: {weaponBoxes}개</p>
+                      <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                      <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'arena' && (
+            <div className="flex flex-col gap-2 pb-2">
+              <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
+                <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
+                <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
+              </div>
+
+              <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
+                <button disabled={isProcessing} onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
+                <button disabled={isProcessing} onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
+                <button disabled={isProcessing} onClick={() => setRankType('points')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'points' ? 'bg-yellow-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🏆 결투 포인트</button>
+              </div>
+              
+              <div className="flex-1 bg-gray-800 rounded-xl border border-gray-700 p-2 shadow-inner">
+                {loadingRank ? (
+                  <div className="flex justify-center items-center h-20 text-gray-500 text-sm font-bold animate-pulse">랭킹 데이터를 불러오는 중...</div>
+                ) : leaderboard.length === 0 ? (
+                  <div className="flex justify-center items-center h-20 text-gray-500 text-sm font-bold">랭킹 데이터가 없습니다.</div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {leaderboard.map((ranker, index) => (
+                      <div key={index} className={`flex items-center justify-between p-2 rounded-lg border ${index === 0 ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]' : index < 3 ? 'bg-gray-700/50 border-gray-500' : 'bg-gray-900 border-gray-800'}`}>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className={`font-black w-5 text-center shrink-0 ${index === 0 ? 'text-yellow-400 text-lg' : index === 1 ? 'text-gray-300 text-base' : index === 2 ? 'text-orange-400 text-base' : 'text-gray-500 text-xs'}`}>{index + 1}</span>
+                          <div className="flex flex-col truncate pr-2">
+                            <span className={`text-[11px] font-bold truncate ${ranker.id === user ? 'text-green-400' : 'text-gray-200'}`}>{ranker.nickname}</span>
+                            <span className={`text-[10px] truncate ${gradeTextColors[ranker.mainWeapon.weapon_grade]}`}>+{ranker.mainWeapon.enhancement_level} {ranker.mainWeapon.name}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="bg-gray-950 px-1.5 py-1 rounded border border-gray-700 text-right flex flex-col justify-center min-w-[55px]">
+                            {rankType === 'attack' && <span className="text-[10px] font-black text-red-400 w-full block">⚔️ {ranker.mainWeapon.attack.toLocaleString()}</span>}
+                            {rankType === 'enhance' && <span className="text-[10px] font-black text-blue-400 w-full block">🛠️ {(ranker.enhance_count || 0).toLocaleString()}회</span>}
+                            {rankType === 'points' && <span className="text-[10px] font-black text-yellow-400 w-full block">🏆 {(ranker.points || 0).toLocaleString()}</span>}
+                          </div>
+                          {ranker.id !== user ? (
+                            <button onClick={() => handleDuel(ranker)} disabled={isProcessing} className="bg-red-700 hover:bg-red-600 px-2 py-1.5 rounded text-[10px] font-black text-white shadow-md active:scale-95 transition-transform shrink-0 disabled:opacity-50">결투 ⚔️</button>
+                          ) : (
+                            <div className="px-3 py-1.5 text-[10px] font-black text-green-400 text-center shrink-0">나 🛡️</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 💡 [수정] 도움말 확률표 최신 밸런스 완벽 적용 */}
+          {activeTab === 'guide' && (
+            <div className="flex flex-col gap-3 text-[11px] pb-4">
+              <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
+                <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
+                <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하여 한 번에 +2강, +3강이 오르면, <span className="text-orange-400 font-black">오른 레벨만큼 보너스도 중첩해서 터지니</span> 반드시 모아두세요!</p>
+              </div>
+              
+              <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
+                <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
+                <table className="w-full text-center border-collapse">
+                  <thead>
+                    <tr className="bg-gray-950 text-gray-400 text-[9px]">
+                      <th className="py-1 border border-gray-800">무기 등급</th>
+                      <th className="border border-gray-800">1~9강</th>
+                      <th className="border border-gray-800">10~14강</th>
+                      <th className="border border-gray-800">15강 이상</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-gray-300 text-[10px]">
+                    <tr>
+                      <td className="py-1 font-bold text-gray-400 border border-gray-800">일반/마법</td>
+                      <td className="border border-gray-800 text-green-400">90%</td>
+                      <td className="border border-gray-800 text-orange-400">50%</td>
+                      <td className="border border-gray-800 text-red-500">20%</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 font-bold text-blue-400 border border-gray-800">희귀</td>
+                      <td className="border border-gray-800 text-green-400">70%</td>
+                      <td className="border border-gray-800 text-orange-400">20%</td>
+                      <td className="border border-gray-800 text-red-500">5%</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 font-bold text-purple-400 border border-gray-800">에픽</td>
+                      <td className="border border-gray-800 text-green-400">40%</td>
+                      <td className="border border-gray-800 text-orange-400">10%</td>
+                      <td className="border border-gray-800 text-red-500">2%</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 font-bold text-yellow-400 border border-gray-800">전설</td>
+                      <td className="border border-gray-800 text-green-400">15%</td>
+                      <td className="border border-gray-800 text-orange-400">3%</td>
+                      <td className="border border-gray-800 text-red-600 font-black">1%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 shrink-0">
+                <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-emerald-400 mb-1 text-xs">🗡️ 무기 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>⬜ 일반:</span><span className="font-mono">78.9%</span></li><li className="flex justify-between"><span>🟩 마법:</span><span className="font-mono">15.0%</span></li><li className="flex justify-between"><span>🟦 희귀:</span><span className="font-mono">5.0%</span></li><li className="flex justify-between"><span>🟪 에픽:</span><span className="font-mono">1.0%</span></li><li className="flex justify-between text-yellow-400 font-bold"><span>🟨 전설:</span><span className="font-mono">0.1%</span></li></ul></div>
+                <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-indigo-400 mb-1 text-xs">📦 주문서 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>📜 일반:</span><span className="font-mono">70.0%</span></li><li className="flex justify-between text-cyan-400 font-bold"><span>✨ 축복:</span><span className="font-mono">20.0%</span></li><li className="flex justify-between text-blue-400 font-bold"><span>🛡️ 파괴방지:</span><span className="font-mono">10.0%</span></li></ul></div>
+              </div>
+            </div>
+          )}
+        </main>
+
+        <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex relative z-50">
+          <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
+          <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
+          <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
+          <button disabled={isProcessing} onClick={() => setActiveTab('guide')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'guide' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📖</span>도움말</button>
+        </nav>
+
+        {duelingTarget && (
+          <div className="absolute inset-0 bg-black/95 flex flex-col items-center justify-center z-[120] p-6 text-center">
+            <div className="flex items-center gap-6 mb-8"><div className="flex items-center flex-col"><span className="text-5xl">🛡️</span><span className="text-blue-400 font-black mt-3 text-lg">나</span></div><span className="text-6xl animate-bounce">⚔️</span><div className="flex items-center flex-col"><span className="text-5xl">😈</span><span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span></div></div>
+            <h2 className="text-3xl font-black text-red-500 mb-2 animate-pulse tracking-widest">결투 진행 중...</h2><p className="text-gray-400 text-sm mt-4">상대의 방어구를 파괴하고 있습니다...</p>
+          </div>
+        )}
+
+        {isMultiSellModalOpen && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-[130] p-6">
+            <div className="bg-gray-900 border-2 border-gray-700 rounded-xl p-5 w-full max-w-sm shadow-2xl">
+              <h2 className="text-lg font-black text-white mb-4 text-center">일괄 판매 설정</h2>
+              <div className="space-y-2 mb-5">
+                {['normal', 'magic', 'rare', 'epic', 'legendary'].map(grade => (
+                  <label key={grade} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sellGrades[grade] ? 'bg-red-900/30 border-red-700' : 'bg-gray-800 border-gray-700'}`}>
+                    <input type="checkbox" checked={sellGrades[grade]} onChange={(e) => setSellGrades(prev => ({ ...prev, [grade]: e.target.checked }))} className="w-5 h-5 accent-red-500"/>
+                    <span className={`text-sm font-bold ${gradeTextColors[grade]}`}>{getGradeLabel(grade)} 등급</span>
+                    <span className="text-xs text-gray-400 ml-auto">(보유: {inventory.filter(w => w.weapon_grade === grade).length}개)</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button disabled={isProcessing} onClick={() => setIsMultiSellModalOpen(false)} className="flex-1 bg-gray-700 py-3 rounded-lg text-sm text-white font-bold">취소</button>
+                <button disabled={isProcessing} onClick={executeMultiSell} className="flex-1 bg-red-600 py-3 rounded-lg text-sm text-white font-black">판매 실행</button>
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'guide' && (
-          <div className="flex flex-col flex-1 overflow-y-auto gap-3 text-[11px] pb-4">
-            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
-              <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
-              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하여 한 번에 +2강, +3강이 오르면, <span className="text-orange-400 font-black">오른 레벨만큼 보너스도 중첩해서 터지니</span> 반드시 모아두세요!</p>
-            </div>
-            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
-              <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
-              <table className="w-full text-center border-collapse">
-                <thead><tr className="bg-gray-950 text-gray-400 text-[9px]"><th className="py-1 border border-gray-800">무기 등급</th><th className="border border-gray-800">1~4강</th><th className="border border-gray-800">5~9강</th><th className="border border-gray-800">10강 이상</th></tr></thead>
-                <tbody className="text-gray-300 text-[10px]">
-                  <tr><td className="py-1 font-bold text-gray-400 border border-gray-800">일반 / 마법</td><td className="border border-gray-800 text-green-400">100%</td><td className="border border-gray-800">90%</td><td className="border border-gray-800 text-red-400">50% <span className="text-[8px] text-gray-500">(15강~:20%)</span></td></tr>
-                  <tr><td className="py-1 font-bold text-blue-400 border border-gray-800">희귀</td><td className="border border-gray-800 text-green-400">90%</td><td className="border border-gray-800">70%</td><td className="border border-gray-800 text-yellow-500">20% <span className="text-[8px] text-gray-500">(15강~:5%)</span></td></tr>
-                  <tr><td className="py-1 font-bold text-purple-400 border border-gray-800">에픽</td><td className="border border-gray-800">70%</td><td className="border border-gray-800">40%</td><td className="border border-gray-800 text-orange-400">10% <span className="text-[8px] text-gray-500">(15강~:2%)</span></td></tr>
-                  <tr><td className="py-1 font-bold text-yellow-400 border border-gray-800">전설</td><td className="border border-gray-800 text-orange-500">30%</td><td className="border border-gray-800 text-red-400">15%</td><td className="border border-gray-800 text-red-600 font-black">3% <span className="text-[8px] text-gray-500">(15강~:1%)</span></td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="grid grid-cols-2 gap-2 shrink-0">
-              <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-emerald-400 mb-1 text-xs">🗡️ 무기 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>⬜ 일반:</span><span className="font-mono">78.9%</span></li><li className="flex justify-between"><span>🟩 마법:</span><span className="font-mono">15.0%</span></li><li className="flex justify-between"><span>🟦 희귀:</span><span className="font-mono">5.0%</span></li><li className="flex justify-between"><span>🟪 에픽:</span><span className="font-mono">1.0%</span></li><li className="flex justify-between text-yellow-400 font-bold"><span>🟨 전설:</span><span className="font-mono">0.1%</span></li></ul></div>
-              <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-indigo-400 mb-1 text-xs">📦 주문서 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>📜 일반:</span><span className="font-mono">70.0%</span></li><li className="flex justify-between text-cyan-400 font-bold"><span>✨ 축복:</span><span className="font-mono">20.0%</span></li><li className="flex justify-between text-blue-400 font-bold"><span>🛡️ 파괴방지:</span><span className="font-mono">10.0%</span></li></ul></div>
+        {selectedInvItem && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-[110] p-6">
+            <div className={`bg-gray-900 border-2 rounded-xl p-5 w-full max-w-sm text-center shadow-2xl ${gradeCardStyles[selectedInvItem.weapon_grade]}`}>
+               <span className={`text-[11px] font-black tracking-wider ${gradeTextColors[selectedInvItem.weapon_grade]}`}>[{getGradeLabel(selectedInvItem.weapon_grade)}]</span>
+               <h2 className="text-xl font-black text-white mt-1 mb-2">+{selectedInvItem.enhancement_level} {selectedInvItem.name}</h2>
+               <div className="flex justify-center mb-4">
+                  {renderWeaponImage(selectedInvItem.weapon_grade, selectedInvItem.enhancement_level, 'w-40 h-40 drop-shadow-2xl')}
+               </div>
+               <div className="bg-gray-950 inline-block px-3 py-1 rounded border border-gray-700 mb-6">
+                 <p className="text-xs font-bold text-gray-200">⚔️ 공격력: {selectedInvItem.attack.toLocaleString()}</p>
+               </div>
+               <div className="flex flex-col gap-2">
+                 <button disabled={isProcessing} onClick={() => handleEquip('main')} className="bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">⚔️ 본장비 장착</button>
+                 <button disabled={isProcessing} onClick={() => handleEquip('sub')} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">🗡️ 서브장비 장착</button>
+                 <button disabled={isProcessing} onClick={handleSell} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-lg shadow-md transition-colors mt-2 text-sm disabled:opacity-50">💰 판매하기</button>
+                 <button disabled={isProcessing} onClick={() => setSelectedInvItem(null)} className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-lg mt-1 border border-gray-600 text-sm disabled:opacity-50">닫기</button>
+               </div>
             </div>
           </div>
         )}
-      </main>
 
-      <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex relative z-50">
-        <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
-        <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
-        <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
-        <button disabled={isProcessing} onClick={() => setActiveTab('guide')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'guide' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📖</span>도움말</button>
-      </nav>
-
-      {duelingTarget && (
-        <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[120] p-6 text-center">
-          <div className="flex items-center gap-6 mb-8"><div className="flex items-center flex-col"><span className="text-5xl">🛡️</span><span className="text-blue-400 font-black mt-3 text-lg">나</span></div><span className="text-6xl animate-bounce">⚔️</span><div className="flex items-center flex-col"><span className="text-5xl">😈</span><span className="text-red-400 font-black mt-3 text-lg">{duelingTarget.nickname}</span></div></div>
-          <h2 className="text-3xl font-black text-red-500 mb-2 animate-pulse tracking-widest">결투 진행 중...</h2><p className="text-gray-400 text-sm mt-4">상대의 방어구를 파괴하고 있습니다...</p>
-        </div>
-      )}
-
-      {isMultiSellModalOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[130] p-6">
-          <div className="bg-gray-900 border-2 border-gray-700 rounded-xl p-5 w-full max-w-sm shadow-2xl">
-            <h2 className="text-lg font-black text-white mb-4 text-center">일괄 판매 설정</h2>
-            <div className="space-y-2 mb-5">
-              {['normal', 'magic', 'rare', 'epic', 'legendary'].map(grade => (
-                <label key={grade} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${sellGrades[grade] ? 'bg-red-900/30 border-red-700' : 'bg-gray-800 border-gray-700'}`}>
-                  <input type="checkbox" checked={sellGrades[grade]} onChange={(e) => setSellGrades(prev => ({ ...prev, [grade]: e.target.checked }))} className="w-5 h-5 accent-red-500"/>
-                  <span className={`text-sm font-bold ${gradeTextColors[grade]}`}>{getGradeLabel(grade)} 등급</span>
-                  <span className="text-xs text-gray-400 ml-auto">(보유: {inventory.filter(w => w.weapon_grade === grade).length}개)</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button disabled={isProcessing} onClick={() => setIsMultiSellModalOpen(false)} className="flex-1 bg-gray-700 py-3 rounded-lg text-sm text-white font-bold">취소</button>
-              <button disabled={isProcessing} onClick={executeMultiSell} className="flex-1 bg-red-600 py-3 rounded-lg text-sm text-white font-black">판매 실행</button>
+        {popupMsg && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-[100] p-6">
+            <div className="bg-gray-800 p-5 rounded-xl border-2 border-yellow-500 text-center w-full max-w-sm">
+              <h2 className="text-white font-bold leading-relaxed whitespace-pre-line text-xs mb-4">{popupMsg}</h2>
+              <button onClick={() => setPopupMsg(null)} className="w-full bg-yellow-600 py-2 rounded-lg font-black text-white text-sm">확인</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {selectedInvItem && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-6">
-          <div className={`bg-gray-900 border-2 rounded-xl p-5 w-full max-w-sm text-center shadow-2xl ${gradeCardStyles[selectedInvItem.weapon_grade]}`}>
-             <span className={`text-[11px] font-black tracking-wider ${gradeTextColors[selectedInvItem.weapon_grade]}`}>[{getGradeLabel(selectedInvItem.weapon_grade)}]</span>
-             <h2 className="text-xl font-black text-white mt-1 mb-2">+{selectedInvItem.enhancement_level} {selectedInvItem.name}</h2>
-             <div className="flex justify-center mb-4">
-                {renderWeaponImage(selectedInvItem.weapon_grade, selectedInvItem.enhancement_level, 'w-40 h-40 drop-shadow-2xl')}
-             </div>
-             <div className="bg-gray-950 inline-block px-3 py-1 rounded border border-gray-700 mb-6">
-               <p className="text-xs font-bold text-gray-200">⚔️ 공격력: {selectedInvItem.attack.toLocaleString()}</p>
-             </div>
-             <div className="flex flex-col gap-2">
-               <button disabled={isProcessing} onClick={() => handleEquip('main')} className="bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">⚔️ 본장비 장착</button>
-               <button disabled={isProcessing} onClick={() => handleEquip('sub')} className="bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-lg shadow-md transition-colors text-sm disabled:opacity-50">🗡️ 서브장비 장착</button>
-               <button disabled={isProcessing} onClick={handleSell} className="bg-yellow-600 hover:bg-yellow-500 text-white font-black py-3 rounded-lg shadow-md transition-colors mt-2 text-sm disabled:opacity-50">💰 판매하기</button>
-               <button disabled={isProcessing} onClick={() => setSelectedInvItem(null)} className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-lg mt-1 border border-gray-600 text-sm disabled:opacity-50">닫기</button>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {popupMsg && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-6">
-          <div className="bg-gray-800 p-5 rounded-xl border-2 border-yellow-500 text-center w-full max-w-sm">
-            <h2 className="text-white font-bold leading-relaxed whitespace-pre-line text-xs mb-4">{popupMsg}</h2>
-            <button onClick={() => setPopupMsg(null)} className="w-full bg-yellow-600 py-2 rounded-lg font-black text-white text-sm">확인</button>
-          </div>
-        </div>
-      )}
-
-      {warningTarget === 'main' && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-6">
-          <div className="bg-gray-900 border-2 border-red-600 p-5 rounded-xl text-center w-full max-w-sm">
-            <h2 className="text-base font-black text-red-500 mb-2">⚠️ 위험 알림</h2>
-            <p className="text-gray-300 text-[11px] mb-4">메인 무기 파괴 시 복구가 불가능합니다. 지르시겠습니까?</p>
-            <div className="flex gap-2">
-              <button disabled={isProcessing} onClick={() => setWarningTarget(null)} className="flex-1 bg-gray-700 py-2 rounded-lg text-xs font-bold text-gray-300 disabled:opacity-50">후퇴</button>
-              <button disabled={isProcessing} onClick={() => executeEnhance('main')} className="flex-1 bg-red-600 py-2 rounded-lg text-xs font-black text-white disabled:opacity-50">상남자 직진</button>
+        {warningTarget === 'main' && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-[100] p-6">
+            <div className="bg-gray-900 border-2 border-red-600 p-5 rounded-xl text-center w-full max-w-sm">
+              <h2 className="text-base font-black text-red-500 mb-2">⚠️ 위험 알림</h2>
+              <p className="text-gray-300 text-[11px] mb-4">메인 무기 파괴 시 복구가 불가능합니다. 지르시겠습니까?</p>
+              <div className="flex gap-2">
+                <button disabled={isProcessing} onClick={() => setWarningTarget(null)} className="flex-1 bg-gray-700 py-2 rounded-lg text-xs font-bold text-gray-300 disabled:opacity-50">후퇴</button>
+                <button disabled={isProcessing} onClick={() => executeEnhance('main')} className="flex-1 bg-red-600 py-2 rounded-lg text-xs font-black text-white disabled:opacity-50">상남자 직진</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
