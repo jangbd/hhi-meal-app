@@ -37,21 +37,26 @@ const checkDB = (res) => {
   return res;
 };
 
-// 무기 등급별 밸런스 설정 테이블 (기하급수적 스탯 인플레이션 적용)
+// 🌟 [최종 수정] 무기 등급별 밸런스 설정 테이블 (희귀 이상 베이스 및 상승폭 대폭 상향)
 const WEAPON_CONFIG = {
   normal: { baseAtk: 20, gainMin: 5, gainMax: 15, protect: 3, basePrice: 100, limitMult: 1 },
-  magic: { baseAtk: 100, gainMin: 30, gainMax: 80, protect: 3, basePrice: 300, limitMult: 5 },
-  rare: { baseAtk: 500, gainMin: 150, gainMax: 400, protect: 3, basePrice: 1000, limitMult: 25 },
-  epic: { baseAtk: 3000, gainMin: 1000, gainMax: 2500, protect: 2, basePrice: 5000, limitMult: 150 },
-  legendary: { baseAtk: 15000, gainMin: 5000, gainMax: 15000, protect: 1, basePrice: 20000, limitMult: 1000 }
+  magic: { baseAtk: 120, gainMin: 40, gainMax: 100, protect: 3, basePrice: 300, limitMult: 5 },
+  rare: { baseAtk: 800, gainMin: 300, gainMax: 800, protect: 3, basePrice: 1000, limitMult: 40 }, 
+  epic: { baseAtk: 5000, gainMin: 2000, gainMax: 5000, protect: 2, basePrice: 5000, limitMult: 300 }, 
+  legendary: { baseAtk: 25000, gainMin: 10000, gainMax: 30000, protect: 1, basePrice: 20000, limitMult: 2500 } 
 };
 
-// 등급 및 레벨별 강화 성공 확률
+// 🌟 [최종 수정] 등급 및 레벨별 강화 성공 확률 테이블 (희귀 이상 10강부터 확률 절벽)
 const getSuccessRate = (grade, level) => {
-  if (grade === 'legendary') return level < 5 ? 30 : level < 9 ? 15 : 5;
-  if (grade === 'epic') return level < 5 ? 70 : level < 9 ? 40 : 20;
-  if (grade === 'rare') return level < 5 ? 90 : level < 9 ? 70 : 50;
-  return level < 5 ? 100 : level < 10 ? 90 : level < 15 ? 60 : 30;
+  // 일반/마법은 15강까지는 비교적 할만함
+  if (grade === 'normal' || grade === 'magic') {
+    return level < 10 ? 90 : level < 15 ? 50 : 20;
+  }
+  // 희귀 이상부터는 10강부터 확률 급락
+  if (grade === 'rare') return level < 10 ? 70 : level < 15 ? 20 : 5;
+  if (grade === 'epic') return level < 10 ? 40 : level < 15 ? 10 : 2;
+  if (grade === 'legendary') return level < 10 ? 15 : level < 15 ? 3 : 1;
+  return 50;
 };
 
 // 재테크용 판매 금액 계산 공식 (기하급수적 상승)
@@ -495,7 +500,7 @@ export default function GameLobby() {
           let randomBonus = 0; 
           let bonusMsg = '';
           
-          // 💡 [수정] 한계돌파 보너스를 오른 레벨(plus) 수 만큼 각각 독립적으로 반복 계산
+          // 💡 한계돌파 보너스를 오른 레벨(plus) 수 만큼 각각 독립적으로 반복 계산
           if (newLvl >= 10) {
             const limitMult = config.limitMult || 1;
             let breakCount = 0;
@@ -805,10 +810,10 @@ export default function GameLobby() {
               <table className="w-full text-center border-collapse">
                 <thead><tr className="bg-gray-950 text-gray-400 text-[9px]"><th className="py-1 border border-gray-800">무기 등급</th><th className="border border-gray-800">1~4강</th><th className="border border-gray-800">5~9강</th><th className="border border-gray-800">10강 이상</th></tr></thead>
                 <tbody className="text-gray-300 text-[10px]">
-                  <tr><td className="py-1 font-bold text-gray-400 border border-gray-800">일반 / 마법</td><td className="border border-gray-800 text-green-400">100%</td><td className="border border-gray-800">90%</td><td className="border border-gray-800 text-red-400">60% <span className="text-[8px] text-gray-500">(15강~:30%)</span></td></tr>
-                  <tr><td className="py-1 font-bold text-blue-400 border border-gray-800">희귀</td><td className="border border-gray-800 text-green-400">90%</td><td className="border border-gray-800">70%</td><td className="border border-gray-800 text-yellow-500">50%</td></tr>
-                  <tr><td className="py-1 font-bold text-purple-400 border border-gray-800">에픽</td><td className="border border-gray-800">70%</td><td className="border border-gray-800">40%</td><td className="border border-gray-800 text-orange-400">20%</td></tr>
-                  <tr><td className="py-1 font-bold text-yellow-400 border border-gray-800">전설</td><td className="border border-gray-800 text-orange-500">30%</td><td className="border border-gray-800 text-red-400">15%</td><td className="border border-gray-800 text-red-600 font-black">5%</td></tr>
+                  <tr><td className="py-1 font-bold text-gray-400 border border-gray-800">일반 / 마법</td><td className="border border-gray-800 text-green-400">100%</td><td className="border border-gray-800">90%</td><td className="border border-gray-800 text-red-400">50% <span className="text-[8px] text-gray-500">(15강~:20%)</span></td></tr>
+                  <tr><td className="py-1 font-bold text-blue-400 border border-gray-800">희귀</td><td className="border border-gray-800 text-green-400">90%</td><td className="border border-gray-800">70%</td><td className="border border-gray-800 text-yellow-500">20% <span className="text-[8px] text-gray-500">(15강~:5%)</span></td></tr>
+                  <tr><td className="py-1 font-bold text-purple-400 border border-gray-800">에픽</td><td className="border border-gray-800">70%</td><td className="border border-gray-800">40%</td><td className="border border-gray-800 text-orange-400">10% <span className="text-[8px] text-gray-500">(15강~:2%)</span></td></tr>
+                  <tr><td className="py-1 font-bold text-yellow-400 border border-gray-800">전설</td><td className="border border-gray-800 text-orange-500">30%</td><td className="border border-gray-800 text-red-400">15%</td><td className="border border-gray-800 text-red-600 font-black">3% <span className="text-[8px] text-gray-500">(15강~:1%)</span></td></tr>
                 </tbody>
               </table>
             </div>
