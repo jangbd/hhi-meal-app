@@ -602,9 +602,10 @@ export default function GameLobby() {
   );
 
   return (
-    /* 💡 [수정] dvh를 사용하여 전체 화면을 채우고, 내부에서만 스크롤되도록 완벽 반응형 구조로 변경 */
-    <div className="fixed inset-0 w-full bg-black flex justify-center z-40">
-      <div className="w-full max-w-md h-[100dvh] flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl relative">
+    /* 💡 [수정] fixed 레이아웃으로 브라우저 크기에 딱 맞게 고정하고, 
+       메인 컨텐츠 영역만 스크롤되도록 설정하여 메뉴바 이탈 완벽 차단! */
+    <div className="fixed inset-0 flex justify-center bg-black z-40">
+      <div className="w-full max-w-md h-full flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl relative">
         
         {showingAd && (
           <div className="absolute inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -617,7 +618,7 @@ export default function GameLobby() {
 
         {isProcessing && !showingAd && (
           <div className="absolute inset-0 z-[999] flex items-end justify-center pb-20 pointer-events-auto">
-            <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">🔄 동기화 중...</span>
+             <span className="bg-black/70 border border-gray-600 text-white text-[10px] font-bold px-4 py-2 rounded-full animate-pulse shadow-2xl">🔄 동기화 중...</span>
           </div>
         )}
 
@@ -640,10 +641,10 @@ export default function GameLobby() {
           </div>
         </div>
 
-        {/* 💡 [수정] main 태그가 남은 영역을 모두 차지하고, 넘치면 스스로 스크롤 생성 (min-h-0 필수) */}
-        <main className="flex-1 overflow-y-auto min-h-0 bg-gray-950 p-2">
+        {/* 💡 [수정] 메인 컨텐츠: flex-1과 overflow-y-auto를 통해 내부 스크롤 보장 */}
+        <main className="flex-1 min-h-0 overflow-y-auto bg-gray-950 p-2 relative">
           {activeTab === 'enhance' && (
-            <div className="flex flex-col gap-2 min-h-full pb-2">
+            <div className="flex flex-col gap-3 pb-2">
               <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
                 <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
                 <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
@@ -665,6 +666,7 @@ export default function GameLobby() {
                   </div>
                 </div>
                 
+                {/* 💡 [유지] 본장비 이미지 w-44 h-44 */}
                 <div className="flex justify-center items-center py-4">
                   {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-44 h-44 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
                 </div>
@@ -692,8 +694,9 @@ export default function GameLobby() {
                   </div>
                 </div>
                 
-                <div className="flex justify-center items-center py-2">
-                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
+                {/* 💡 [수정] 서브장비 이미지도 본장비와 동일하게 w-44 h-44로 확대 */}
+                <div className="flex justify-center items-center py-4">
+                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-44 h-44 drop-shadow-xl') : <div className="text-5xl">❌</div>}
                 </div>
 
                 <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
@@ -819,7 +822,6 @@ export default function GameLobby() {
             </div>
           )}
 
-          {/* 💡 [수정] 도움말 확률표 최신 밸런스 완벽 적용 */}
           {activeTab === 'guide' && (
             <div className="flex flex-col gap-3 text-[11px] pb-4">
               <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
@@ -875,6 +877,7 @@ export default function GameLobby() {
           )}
         </main>
 
+        {/* 💡 [유지] 하단 고정 네비게이션 */}
         <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex relative z-50">
           <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
           <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
