@@ -550,8 +550,8 @@ export default function GameLobby() {
   );
 
   return (
-    /* 💡 [핵심] 전체 화면을 절대좌표(fixed)로 잡고, 내부 메뉴바를 absolute bottom-0으로 완전히 못박았습니다. */
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ height: '100dvh' }}>
+    /* 💡 [핵심 복구] 대표님의 원래 환경에 맞게 bottom: '65px', height: 'auto' 유지 */
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -587,8 +587,8 @@ export default function GameLobby() {
         </div>
       </div>
 
-      {/* 💡 [핵심 영역] 스크롤 영역, 부모 컨테이너가 100dvh이므로 남는 공간만 정확히 차지하며 플렉스 스크롤됨 */}
-      <main className="flex-1 overflow-y-auto p-2 flex flex-col w-full">
+      {/* 💡 [마법의 속성] min-h-0을 추가해야 flex-col 컨테이너 안에서 이 영역이 늘어나지 않고 얌전히 스크롤됩니다. */}
+      <main className="flex-1 overflow-y-auto p-2 min-h-0 flex flex-col">
         {activeTab === 'enhance' && (
           <div className="flex flex-col flex-1 gap-1 justify-between min-h-[450px]">
             <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
@@ -650,9 +650,9 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [적용] 스크롤 컨텐츠 내부 하단 여백 추가. mt-auto를 활용해 버튼들이 아래로 밀착됨 */}
+        {/* 💡 컨텐츠가 길어지면 자연스럽게 스크롤 되도록 flex 구조 유지 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col flex-1 gap-2">
+          <div className="flex flex-col gap-2 flex-1">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -693,12 +693,12 @@ export default function GameLobby() {
               </div>
             </div>
             
-            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-2">
-              <div className="flex gap-1.5">
+            <div className="flex flex-col gap-2 px-2 mt-auto shrink-0 pb-2">
+              <div className="flex gap-2">
                 <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
                 <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">🗡️ 1개 열기</button>
                 <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">⚔️ 모두 열기 ({weaponBoxes})</button>
               </div>
@@ -781,7 +781,7 @@ export default function GameLobby() {
         )}
       </main>
 
-      {/* 💡 [핵심] nav를 main 컨테이너 바깥, flex-col의 가장 하단 요소로 배치하고 크기를 고정(shrink-0)시켰습니다. */}
+      {/* 💡 [핵심] nav를 main 영역 바깥으로 빼고 shrink-0을 적용하여 부모 컨테이너 가장 하단에 벽돌처럼 고정했습니다. */}
       <nav className="shrink-0 w-full h-16 bg-gray-900 border-t border-gray-800 flex relative z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
