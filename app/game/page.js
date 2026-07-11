@@ -37,7 +37,7 @@ const checkDB = (res) => {
   return res;
 };
 
-// 💡 [수정됨] 무기 등급별 밸런스 설정 테이블 (기하급수적 스탯 인플레이션 적용)
+// 무기 등급별 밸런스 설정 테이블 (기하급수적 스탯 인플레이션 적용)
 const WEAPON_CONFIG = {
   normal: { baseAtk: 20, gainMin: 5, gainMax: 15, protect: 3, basePrice: 100, limitMult: 1 },
   magic: { baseAtk: 100, gainMin: 30, gainMax: 80, protect: 3, basePrice: 300, limitMult: 5 },
@@ -474,7 +474,7 @@ export default function GameLobby() {
     if (isProtecting) pUpdates.protect_scrolls = protectScrolls - 1;
     
     try { await supabase.from('game_profiles').update(pUpdates).eq('id', user).then(checkDB); } 
-    catch(err) { alert("주문서 사용 실패: " + err.message); setEnhancingSlot(null); setIsProcessing(false); return; }
+    catch(err) { alert("오류: " + err.message); setEnhancingSlot(null); setIsProcessing(false); return; }
     
     setTimeout(async () => {
       try {
@@ -486,17 +486,33 @@ export default function GameLobby() {
           const plus = selectedScrollType === 'blessed' ? Math.floor(Math.random() * 3) + 1 : 1;
           const newLvl = targetWeapon.enhancement_level + plus; 
           const config = WEAPON_CONFIG[targetWeapon.weapon_grade];
-          let totalBaseGain = 0;
-          for(let i=0; i<plus; i++) totalBaseGain += Math.floor(Math.random() * (config.gainMax - config.gainMin + 1)) + config.gainMin;
           
-          let randomBonus = 0; let bonusMsg = '';
-          // 💡 [수정됨] 한계돌파 시 무기 등급에 따른 폭발적인 스탯 증가
+          let totalBaseGain = 0;
+          for(let i=0; i<plus; i++) {
+              totalBaseGain += Math.floor(Math.random() * (config.gainMax - config.gainMin + 1)) + config.gainMin;
+          }
+          
+          let randomBonus = 0; 
+          let bonusMsg = '';
+          
+          // 💡 [수정] 한계돌파 보너스를 오른 레벨(plus) 수 만큼 각각 독립적으로 반복 계산
           if (newLvl >= 10) {
             const limitMult = config.limitMult || 1;
-            // 기본 10~50 범위에 무기 등급 배수를 곱함
-            randomBonus = (Math.floor(Math.random() * 41) + 10) * limitMult;
-            if (selectedScrollType === 'blessed') randomBonus *= 2; 
-            bonusMsg = `\n(✨ 등급 한계돌파 보너스 +${randomBonus.toLocaleString()})`;
+            let breakCount = 0;
+
+            for(let i=0; i<plus; i++) {
+              // 오르는 단계별로 10강 이상인지 체크하여 보너스 지급
+              let stepLevel = targetWeapon.enhancement_level + i + 1;
+              if (stepLevel >= 10) {
+                 randomBonus += (Math.floor(Math.random() * 41) + 10) * limitMult;
+                 breakCount++;
+              }
+            }
+            
+            if (randomBonus > 0) {
+                let extraMsg = breakCount > 1 ? ` (x${breakCount}연속 터짐!)` : '';
+                bonusMsg = `\n(✨ 한계돌파 보너스 +${randomBonus.toLocaleString()})${extraMsg}`;
+            }
           }
           
           const addedAtk = totalBaseGain + randomBonus; 
@@ -664,7 +680,7 @@ export default function GameLobby() {
         )}
 
         {activeTab === 'inventory' && (
-          <div className="flex flex-col flex-1 overflow-y-auto gap-2">
+          <div className="flex flex-col flex-1 overflow-y-auto gap-2 pb-2">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -782,7 +798,7 @@ export default function GameLobby() {
           <div className="flex flex-col flex-1 overflow-y-auto gap-3 text-[11px] pb-4">
             <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
               <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
-              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배</span>로 증폭되니 반드시 모아두세요!</p>
+              <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하여 한 번에 +2강, +3강이 오르면, <span className="text-orange-400 font-black">오른 레벨만큼 보너스도 중첩해서 터지니</span> 반드시 모아두세요!</p>
             </div>
             <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
               <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
