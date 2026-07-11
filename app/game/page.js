@@ -551,7 +551,7 @@ export default function GameLobby() {
 
   return (
     /* 💡 [핵심] 전체 화면을 절대좌표(fixed)로 잡고, 내부 메뉴바를 absolute bottom-0으로 완전히 못박았습니다. */
-    <div className="fixed top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40">
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ height: '100dvh' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -587,10 +587,10 @@ export default function GameLobby() {
         </div>
       </div>
 
-      {/* 💡 [핵심 영역] 스크롤되는 메인 영역에 하단 패딩(pb-[70px])을 주어 네비게이션 바 높이만큼 공간 확보 */}
-      <main className="flex-1 overflow-y-auto p-2 pb-[70px] relative">
+      {/* 💡 [핵심 영역] 스크롤 영역, 부모 컨테이너가 100dvh이므로 남는 공간만 정확히 차지하며 플렉스 스크롤됨 */}
+      <main className="flex-1 overflow-y-auto p-2 flex flex-col w-full">
         {activeTab === 'enhance' && (
-          <div className="flex flex-col h-full gap-1 justify-between min-h-[450px]">
+          <div className="flex flex-col flex-1 gap-1 justify-between min-h-[450px]">
             <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
@@ -650,8 +650,9 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 [적용] 스크롤 컨텐츠 내부 하단 여백 추가. mt-auto를 활용해 버튼들이 아래로 밀착됨 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col gap-2 min-h-full">
+          <div className="flex flex-col flex-1 gap-2">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -692,7 +693,7 @@ export default function GameLobby() {
               </div>
             </div>
             
-            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-1">
+            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-2">
               <div className="flex gap-1.5">
                 <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
                 <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
@@ -706,7 +707,7 @@ export default function GameLobby() {
         )}
 
         {activeTab === 'arena' && (
-          <div className="flex flex-col h-full gap-2">
+          <div className="flex flex-col flex-1 gap-2 pb-2">
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
               <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
               <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
@@ -755,7 +756,7 @@ export default function GameLobby() {
         )}
 
         {activeTab === 'guide' && (
-          <div className="flex flex-col gap-3 overflow-y-auto p-1 pb-4 text-[11px]">
+          <div className="flex flex-col flex-1 gap-3 pb-4 text-[11px]">
             <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
               <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
               <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">+1~100 랜덤 보너스 공격력</span>이 추가됩니다. 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배(+2~200)</span>로 증폭되니 반드시 모아두세요!</p>
@@ -780,8 +781,8 @@ export default function GameLobby() {
         )}
       </main>
 
-      {/* 💡 [핵심 복구] 절대좌표(Absolute)를 이용해 메뉴 바를 화면 맨 아래에 못박아 버렸습니다! */}
-      <nav className="absolute bottom-0 w-full h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 z-50">
+      {/* 💡 [핵심] nav를 main 컨테이너 바깥, flex-col의 가장 하단 요소로 배치하고 크기를 고정(shrink-0)시켰습니다. */}
+      <nav className="shrink-0 w-full h-16 bg-gray-900 border-t border-gray-800 flex relative z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
