@@ -37,7 +37,7 @@ const checkDB = (res) => {
   return res;
 };
 
-// 🌟 [최종 수정] 무기 등급별 밸런스 설정 테이블 (희귀 이상 베이스 및 상승폭 대폭 상향)
+// 무기 등급별 밸런스 설정 테이블
 const WEAPON_CONFIG = {
   normal: { baseAtk: 20, gainMin: 5, gainMax: 15, protect: 3, basePrice: 100, limitMult: 1 },
   magic: { baseAtk: 120, gainMin: 40, gainMax: 100, protect: 3, basePrice: 300, limitMult: 5 },
@@ -46,13 +46,11 @@ const WEAPON_CONFIG = {
   legendary: { baseAtk: 25000, gainMin: 10000, gainMax: 30000, protect: 1, basePrice: 20000, limitMult: 2500 } 
 };
 
-// 🌟 [최종 수정] 등급 및 레벨별 강화 성공 확률 테이블 (희귀 이상 10강부터 확률 절벽)
+// 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
-  // 일반/마법은 15강까지는 비교적 할만함
   if (grade === 'normal' || grade === 'magic') {
     return level < 10 ? 90 : level < 15 ? 50 : 20;
   }
-  // 희귀 이상부터는 10강부터 확률 급락
   if (grade === 'rare') return level < 10 ? 70 : level < 15 ? 20 : 5;
   if (grade === 'epic') return level < 10 ? 40 : level < 15 ? 10 : 2;
   if (grade === 'legendary') return level < 10 ? 15 : level < 15 ? 3 : 1;
@@ -306,6 +304,27 @@ export default function GameLobby() {
     } catch (err) { alert("상점 구매 오류: " + err.message); } finally { setIsProcessing(false); }
   };
 
+  // 💡 [수정] 대표님 피드백 반영: 최소 회생 자금 2,000 댕 지급
+  const handleWatchAdForDang = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowingAd(true);
+
+    setTimeout(async () => {
+      setShowingAd(false);
+      try {
+        const reward = 2000; // 무기 1개(1000) + 주문서 3개(900) 구입 가능한 완벽한 회생 시동금
+        await supabase.from('game_profiles').update({ dang: dang + reward }).eq('id', user).then(checkDB);
+        setPopupMsg(`📺 광고 시청 보상 도착!\n\n지원금 ${reward.toLocaleString()} 댕이 지급되었습니다.\n무기를 다시 강화하여 재테크에 도전하세요!`);
+        await loadGameData(user);
+      } catch (err) {
+        alert("보상 획득 오류: " + err.message);
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 3000);
+  };
+
   const handleOpenWeaponBox = async () => {
     if (isProcessing) return;
     if (weaponBoxes <= 0) return alert('무기 상자가 없습니다!');
@@ -500,13 +519,11 @@ export default function GameLobby() {
           let randomBonus = 0; 
           let bonusMsg = '';
           
-          // 💡 한계돌파 보너스를 오른 레벨(plus) 수 만큼 각각 독립적으로 반복 계산
           if (newLvl >= 10) {
             const limitMult = config.limitMult || 1;
             let breakCount = 0;
 
             for(let i=0; i<plus; i++) {
-              // 오르는 단계별로 10강 이상인지 체크하여 보너스 지급
               let stepLevel = targetWeapon.enhancement_level + i + 1;
               if (stepLevel >= 10) {
                  randomBonus += (Math.floor(Math.random() * 41) + 10) * limitMult;
@@ -708,10 +725,14 @@ export default function GameLobby() {
               </div>
             </div>
 
+            {/* 💡 [수정] 상점 영역에 무료 댕 충전(광고) 버튼 추가 (2,000댕) */}
             <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2">
-              <h2 className="text-[11px] font-bold text-yellow-400 mb-2">🛒 상점 및 뽑기</h2>
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
+                <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
+              </div>
+              
               <div className="flex gap-2">
-                
                 <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
                   <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
                   <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
@@ -798,7 +819,6 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [수정] 도움말 UI 업데이트 - 변경된 한계돌파 보너스 설명 적용 */}
         {activeTab === 'guide' && (
           <div className="flex flex-col flex-1 overflow-y-auto gap-3 text-[11px] pb-4">
             <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
