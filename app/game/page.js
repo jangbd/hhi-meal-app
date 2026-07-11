@@ -126,10 +126,10 @@ export default function GameLobby() {
   const getGradeLabel = (grade) => ({ normal: '일반', magic: '마법', rare: '희귀', epic: '에픽', legendary: '전설' }[grade] || '일반');
   
   const getAuraEffect = (level) => {
-    if (level >= 15) return 'drop-shadow(0 0 25px rgba(250, 204, 21, 1)) scale-125 animate-pulse';
-    if (level >= 10) return 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)) scale-110';
-    if (level >= 5) return 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)) scale-105';
-    return 'transition-all duration-300';
+    if (level >= 15) return 'drop-shadow(0 0 25px rgba(250, 204, 21, 1)) scale-125 animate-pulse'; 
+    if (level >= 10) return 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.9)) scale-110'; 
+    if (level >= 5) return 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)) scale-105'; 
+    return 'transition-all duration-300'; 
   };
 
   const loadGameData = useCallback(async (userId) => {
@@ -550,7 +550,8 @@ export default function GameLobby() {
   );
 
   return (
-    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ top: 0, bottom: '65px', height: 'auto' }}>
+    /* 💡 [핵심 완벽 해결] 화면 스크롤이 절대 생기지 않도록 고정 프레임 설정 (bottom: 65px 유지) */
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md flex flex-col bg-gray-950 text-white font-sans overflow-hidden border-x border-gray-900 shadow-2xl z-40" style={{ bottom: '65px' }}>
       
       {showingAd && (
         <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center pointer-events-auto">
@@ -567,11 +568,13 @@ export default function GameLobby() {
         </div>
       )}
 
-      <header className="flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800 shrink-0">
+      {/* 헤더 (크기 고정) */}
+      <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
         <h1 className="font-black text-lg text-yellow-500 tracking-wider">강화의 신</h1>
       </header>
       
-      <div className="bg-gray-800 px-3 py-1.5 flex justify-between items-center shrink-0 shadow-md">
+      {/* 유저 정보 (크기 고정) */}
+      <div className="shrink-0 bg-gray-800 px-3 py-1.5 flex justify-between items-center shadow-md">
         <div className="flex flex-col justify-center">
           <span className="text-[12px] font-black text-white truncate max-w-[100px]">{nickname}</span>
           <div className="flex items-center gap-2">
@@ -586,11 +589,13 @@ export default function GameLobby() {
         </div>
       </div>
 
-      {/* 💡 [핵심] 스크롤 영역에 넉넉한 pb-16 추가. min-h-0 속성 유지하여 부모를 뚫고 나가지 않게 조치 */}
-      <main className="flex-1 overflow-y-auto p-2 pb-16 min-h-0 flex flex-col">
+      {/* 💡 [핵심] 가운데 메인 컨텐츠 영역. flex-1과 min-h-0을 동시에 주어 부모 컨테이너 영역 밖으로 절대 안 밀려납니다. */}
+      <main className="flex-1 min-h-0 flex flex-col bg-gray-950 p-2">
+        
+        {/* 강화 탭: 여백 없이 화면 비율에 맞춰 50:50으로 정확하게 나뉨 */}
         {activeTab === 'enhance' && (
-          <div className="flex flex-col flex-1 gap-1 justify-between min-h-[450px]">
-            <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
+          <div className="flex flex-col flex-1 gap-1.5">
+            <div className="flex gap-1 shrink-0 p-1 bg-gray-950">
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
               <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
             </div>
@@ -649,9 +654,9 @@ export default function GameLobby() {
           </div>
         )}
 
-        {/* 💡 [적용] 스크롤 컨텐츠 내부 하단. pb-16로 인해 스크롤 시 버튼이 넉넉히 위로 올라옵니다. */}
+        {/* 💡 창고/상점 탭: 해당 영역 안에서만 독립적으로 스크롤 작동 */}
         {activeTab === 'inventory' && (
-          <div className="flex flex-col flex-1 gap-2">
+          <div className="flex flex-col flex-1 overflow-y-auto gap-2">
             <div className="shrink-0">
               <div className="flex justify-between items-center mb-1 px-2">
                   <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -692,12 +697,12 @@ export default function GameLobby() {
               </div>
             </div>
             
-            <div className="flex flex-col gap-1.5 px-2 mt-auto shrink-0 pb-1">
-              <div className="flex gap-1.5">
+            <div className="flex flex-col gap-2 px-2 shrink-0 pb-2">
+              <div className="flex gap-2">
                 <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📜 1개 열기</button>
                 <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">📦 모두 열기 ({scrollBoxes})</button>
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex gap-2">
                 <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">🗡️ 1개 열기</button>
                 <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg text-[10px] font-black shadow-sm disabled:opacity-50">⚔️ 모두 열기 ({weaponBoxes})</button>
               </div>
@@ -705,8 +710,9 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 투기장 탭: 여백 제거 및 정확한 스크롤 영역 할당 */}
         {activeTab === 'arena' && (
-          <div className="flex flex-col flex-1 gap-2 pb-2">
+          <div className="flex flex-col flex-1 gap-2">
             <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
               <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
               <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
@@ -724,7 +730,7 @@ export default function GameLobby() {
               ) : leaderboard.length === 0 ? (
                 <div className="flex justify-center items-center h-full text-gray-500 text-sm font-bold">랭킹 데이터가 없습니다.</div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 pb-2">
                   {leaderboard.map((ranker, index) => (
                     <div key={index} className={`flex items-center justify-between p-2 rounded-lg border ${index === 0 ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]' : index < 3 ? 'bg-gray-700/50 border-gray-500' : 'bg-gray-900 border-gray-800'}`}>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -754,13 +760,14 @@ export default function GameLobby() {
           </div>
         )}
 
+        {/* 💡 도움말 탭: 독립적 스크롤 영역 보장 */}
         {activeTab === 'guide' && (
-          <div className="flex flex-col flex-1 gap-3 pb-4 text-[11px]">
-            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md">
+          <div className="flex flex-col flex-1 overflow-y-auto gap-3 text-[11px] pb-4">
+            <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
               <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
               <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">+1~100 랜덤 보너스 공격력</span>이 추가됩니다. 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하면 보너스가 무려 <span className="text-orange-400 font-black">2배(+2~200)</span>로 증폭되니 반드시 모아두세요!</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl">
+            <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
               <h3 className="font-bold text-gray-200 mb-1.5 text-xs">📊 등급별 강화 성공 확률</h3>
               <table className="w-full text-center border-collapse">
                 <thead><tr className="bg-gray-950 text-gray-400 text-[9px]"><th className="py-1 border border-gray-800">무기 등급</th><th className="border border-gray-800">1~4강</th><th className="border border-gray-800">5~9강</th><th className="border border-gray-800">10강 이상</th></tr></thead>
@@ -772,7 +779,7 @@ export default function GameLobby() {
                 </tbody>
               </table>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 shrink-0">
               <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-emerald-400 mb-1 text-xs">🗡️ 무기 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>⬜ 일반:</span><span className="font-mono">78.9%</span></li><li className="flex justify-between"><span>🟩 마법:</span><span className="font-mono">15.0%</span></li><li className="flex justify-between"><span>🟦 희귀:</span><span className="font-mono">5.0%</span></li><li className="flex justify-between"><span>🟪 에픽:</span><span className="font-mono">1.0%</span></li><li className="flex justify-between text-yellow-400 font-bold"><span>🟨 전설:</span><span className="font-mono">0.1%</span></li></ul></div>
               <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl"><h3 className="font-bold text-indigo-400 mb-1 text-xs">📦 주문서 확률</h3><ul className="space-y-0.5 text-gray-300 text-[10px]"><li className="flex justify-between"><span>📜 일반:</span><span className="font-mono">70.0%</span></li><li className="flex justify-between text-cyan-400 font-bold"><span>✨ 축복:</span><span className="font-mono">20.0%</span></li><li className="flex justify-between text-blue-400 font-bold"><span>🛡️ 파괴방지:</span><span className="font-mono">10.0%</span></li></ul></div>
             </div>
@@ -780,8 +787,8 @@ export default function GameLobby() {
         )}
       </main>
 
-      {/* 💡 [핵심 복구] 절대 안 잘리게! 메뉴를 main 밖의 부모 플렉스 하단(mt-auto)에 강제 고정했습니다. */}
-      <nav className="shrink-0 w-full h-16 bg-gray-900 border-t border-gray-800 flex mt-auto z-50">
+      {/* 💡 하단 네비게이션을 앱 껍데기에 단단히 고정 (크기 축소 방지 shrink-0 적용) */}
+      <nav className="shrink-0 w-full h-14 bg-gray-900 border-t border-gray-800 flex relative z-50">
         <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>강화</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>창고/상점</button>
         <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>투기장</button>
