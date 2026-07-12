@@ -4,6 +4,8 @@
 export const gameDict = {
   ko: {
     appTitle: '강화의 신',
+    maintenanceTitle: '⚙️ 월말 대장점검 중',
+    maintenanceDesc: '매월 말일 23:30 ~ 익월 01:30 사이에는\n랭킹 집계 및 시즌 정산을 위해\n게임 이용이 잠시 제한됩니다.\n조금만 기다려주세요!',
     backToHome: '메인으로',
     serverConnecting: '서버 연결 중...',
     errorTitle: '⚠️ 오류가 발생했습니다',
@@ -53,7 +55,7 @@ export const gameDict = {
     startWeaponNames: { magic: '초보자의 롱소드', normal: '초보자의 목검' },
     noNickname: '이름없음', unranked: '순위 외', bareFists: '맨주먹', itemNormalScroll: '일반 주문서', itemBlessedScroll: '축복 주문서', itemScrollBox: '주문서 상자', itemWeaponBox: '무기 상자', itemProtectScroll: '파괴방지 주문서', day7Complete: '7일 연속 완주!',
     // alerts / popups
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [월간 시즌 보상 도착]\n\n새로운 달이 시작되었습니다!\n- 기본 접속 보상: ${basic.toLocaleString()} 댕\n- 지난 시즌 랭킹(${myRank}위) 보상: ${rank.toLocaleString()} 댕\n\n총 ${total.toLocaleString()} 댕이 지급되었습니다! 이번 달도 화이팅!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [월간 시즌 보상 도착]\n\n새로운 시즌이 시작되어 랭킹이 초기화되었습니다!\n- 기본 접속 보상: ${basic.toLocaleString()} 댕\n- 지난 시즌 랭킹(${myRank}위) 보상: ${rank.toLocaleString()} 댕${scrollDang > 0 ? `\n- 잔여 주문서 정산: ${scrollDang.toLocaleString()} 댕` : ''}\n\n총 ${total.toLocaleString()} 댕이 지급되었습니다! 이번 달도 화이팅!`,
     attendanceComplete: (day, label) => `📅 [출석 체크 완료] ${day}일차\n\n${label}\n\n매일 접속하면 7일차에 대박 보상이 기다립니다!`,
     duelExhausted: '⚠️ 오늘의 결투 횟수(10회)를 모두 소진했습니다!',
     noWeaponForDuel: '장착된 무기가 없습니다!',
@@ -103,6 +105,8 @@ export const gameDict = {
 
   en: {
     appTitle: 'Enhancement Game',
+    maintenanceTitle: '⚙️ Monthly Maintenance',
+    maintenanceDesc: 'The game is temporarily unavailable\nfrom 23:30 on the last day of the month\nto 01:30 the next day\nfor ranking tally and season settlement.\nPlease wait a moment!',
     backToHome: 'Back to Home',
     serverConnecting: 'Connecting to server...',
     errorTitle: '⚠️ An error occurred',
@@ -151,7 +155,7 @@ export const gameDict = {
     weaponNames: { normal: 'Novice Sword', magic: 'Steel Longsword', rare: 'Spirit Knight Blade', epic: 'Doom Blade', legendary: 'Executioner\'s Golden Sword' },
     startWeaponNames: { magic: 'Beginner\'s Longsword', normal: 'Beginner\'s Wooden Sword' },
     noNickname: 'No Name', unranked: 'Unranked', bareFists: 'Bare Fists', itemNormalScroll: 'Normal Scroll', itemBlessedScroll: 'Blessed Scroll', itemScrollBox: 'Scroll Box', itemWeaponBox: 'Weapon Box', itemProtectScroll: 'Protection Scroll', day7Complete: '7-day streak complete!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Monthly Season Reward]\n\nA new month has begun!\n- Login bonus: ${basic.toLocaleString()} Dang\n- Last season rank (#${myRank}) bonus: ${rank.toLocaleString()} Dang\n\nTotal ${total.toLocaleString()} Dang granted! Good luck this month!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Monthly Season Reward]\n\nA new season has begun and rankings have been reset!\n- Login bonus: ${basic.toLocaleString()} Dang\n- Last season rank (#${myRank}) bonus: ${rank.toLocaleString()} Dang${scrollDang > 0 ? `\n- Leftover scroll settlement: ${scrollDang.toLocaleString()} Dang` : ''}\n\nTotal ${total.toLocaleString()} Dang granted! Good luck this month!`,
     attendanceComplete: (day, label) => `📅 [Attendance Complete] Day ${day}\n\n${label}\n\nLog in every day — Day 7 has a huge reward waiting!`,
     duelExhausted: '⚠️ You\'ve used all 10 duels for today!',
     noWeaponForDuel: 'No weapon equipped!',
@@ -201,6 +205,8 @@ export const gameDict = {
 
   vi: {
     appTitle: 'Trò chơi Cường hóa',
+    maintenanceTitle: '⚙️ Bảo trì cuối tháng',
+    maintenanceDesc: 'Trò chơi tạm thời không khả dụng\ntừ 23:30 ngày cuối tháng\nđến 01:30 ngày hôm sau\nđể tổng hợp bảng xếp hạng và quyết toán mùa giải.\nVui lòng chờ trong giây lát!',
     backToHome: 'Về trang chính',
     serverConnecting: 'Đang kết nối máy chủ...',
     errorTitle: '⚠️ Đã xảy ra lỗi',
@@ -249,7 +255,7 @@ export const gameDict = {
     weaponNames: { normal: 'Kiếm gỗ tân binh', magic: 'Trường kiếm thép', rare: 'Kiếm hiệp sĩ linh hồn', epic: 'Kiếm diệt vong', legendary: 'Kiếm vàng đao phủ' },
     startWeaponNames: { magic: 'Trường kiếm tân thủ', normal: 'Kiếm gỗ tân thủ' },
     noNickname: 'Chưa đặt tên', unranked: 'Ngoài BXH', bareFists: 'Tay không', itemNormalScroll: 'Bùa Thường', itemBlessedScroll: 'Bùa Phép', itemScrollBox: 'Hộp Bùa', itemWeaponBox: 'Hộp Vũ Khí', itemProtectScroll: 'Bùa Bảo Vệ', day7Complete: 'Hoàn thành 7 ngày liên tục!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Thưởng mùa hàng tháng]\n\nMột tháng mới đã bắt đầu!\n- Thưởng đăng nhập: ${basic.toLocaleString()} Dang\n- Thưởng hạng mùa trước (#${myRank}): ${rank.toLocaleString()} Dang\n\nTổng ${total.toLocaleString()} Dang đã được cấp! Chúc may mắn tháng này!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Thưởng mùa hàng tháng]\n\nMùa mới đã bắt đầu và bảng xếp hạng đã được đặt lại!\n- Thưởng đăng nhập: ${basic.toLocaleString()} Dang\n- Thưởng hạng mùa trước (#${myRank}): ${rank.toLocaleString()} Dang${scrollDang > 0 ? `\n- Quy đổi cuộn giấy còn lại: ${scrollDang.toLocaleString()} Dang` : ''}\n\nTổng ${total.toLocaleString()} Dang đã được cấp! Chúc may mắn tháng này!`,
     attendanceComplete: (day, label) => `📅 [Điểm danh hoàn tất] Ngày ${day}\n\n${label}\n\nĐăng nhập mỗi ngày — ngày 7 có phần thưởng lớn!`,
     duelExhausted: '⚠️ Bạn đã dùng hết 10 lượt đấu hôm nay!',
     noWeaponForDuel: 'Chưa trang bị vũ khí!',
@@ -299,6 +305,8 @@ export const gameDict = {
 
   zh: {
     appTitle: '强化之神',
+    maintenanceTitle: '⚙️ 月末维护中',
+    maintenanceDesc: '每月最后一天 23:30 至\n次日 01:30 期间，\n为进行排名统计与赛季结算，\n游戏将暂时无法使用。\n请稍候！',
     backToHome: '返回主页',
     serverConnecting: '正在连接服务器...',
     errorTitle: '⚠️ 发生错误',
@@ -347,7 +355,7 @@ export const gameDict = {
     weaponNames: { normal: '新手木剑', magic: '钢铁长剑', rare: '精灵骑士剑', epic: '毁灭魔剑', legendary: '处刑者黄金剑' },
     startWeaponNames: { magic: '新手长剑', normal: '新手木剑' },
     noNickname: '无名', unranked: '排名外', bareFists: '赤手空拳', itemNormalScroll: '普通卷轴', itemBlessedScroll: '祝福卷轴', itemScrollBox: '卷轴箱', itemWeaponBox: '武器箱', itemProtectScroll: '防爆卷轴', day7Complete: '连续7天签到完成！',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [月度赛季奖励到账]\n\n新的一月已经开始！\n- 基础登录奖励：${basic.toLocaleString()} 当\n- 上赛季排名(第${myRank}名)奖励：${rank.toLocaleString()} 当\n\n共发放 ${total.toLocaleString()} 当！本月也要加油！`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [月度赛季奖励到账]\n\n新赛季已开始，排名已重置！\n- 基础登录奖励：${basic.toLocaleString()} 当\n- 上赛季排名(第${myRank}名)奖励：${rank.toLocaleString()} 当${scrollDang > 0 ? `\n- 剩余卷轴结算：${scrollDang.toLocaleString()} 当` : ''}\n\n共发放 ${total.toLocaleString()} 当！本月也要加油！`,
     attendanceComplete: (day, label) => `📅 [签到完成] 第${day}天\n\n${label}\n\n每天登录，第7天有大奖等着你！`,
     duelExhausted: '⚠️ 今日决斗次数(10次)已全部用完！',
     noWeaponForDuel: '未装备武器！',
@@ -398,6 +406,8 @@ export const gameDict = {
   uz: {
     appTitle: 'Kuchaytirish O\'yini',
     backToHome: 'Bosh sahifaga',
+    maintenanceTitle: '⚙️ Oylik texnik xizmat',
+    maintenanceDesc: 'Har oyning oxirgi kuni soat 23:30 dan\nkeyingi kun 01:30 gacha\nreyting hisob-kitobi va mavsum yakunlash uchun\no\'yin vaqtincha ishlamaydi.\nBiroz kuting!',
     serverConnecting: 'Serverga ulanmoqda...',
     errorTitle: '⚠️ Xatolik yuz berdi',
     nicknamePrompt: 'Taxallus kiriting',
@@ -445,7 +455,7 @@ export const gameDict = {
     weaponNames: { normal: "Yangi boshlovchi yog'och qilich", magic: 'Po\'lat uzun qilich', rare: 'Ruh ritsar qilichi', epic: "Halokat qilichi", legendary: 'Jallodning oltin qilichi' },
     startWeaponNames: { magic: "Boshlang'ich uzun qilich", normal: "Boshlang'ich yog'och qilich" },
     noNickname: 'Ismsiz', unranked: 'Reytingsiz', bareFists: "Yalang qo'l", itemNormalScroll: 'Oddiy tumor', itemBlessedScroll: 'Muborak tumor', itemScrollBox: 'Tumor qutisi', itemWeaponBox: 'Qurol qutisi', itemProtectScroll: 'Himoya tumori', day7Complete: '7 kunlik ketma-ketlik tugadi!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Oylik mavsum mukofoti]\n\nYangi oy boshlandi!\n- Kirish mukofoti: ${basic.toLocaleString()} Dang\n- O'tgan mavsum reytingi (${myRank}-o'rin) mukofoti: ${rank.toLocaleString()} Dang\n\nJami ${total.toLocaleString()} Dang berildi! Bu oy ham omad!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Oylik mavsum mukofoti]\n\nYangi mavsum boshlandi va reyting yangilandi!\n- Kirish mukofoti: ${basic.toLocaleString()} Dang\n- O'tgan mavsum reytingi (${myRank}-o'rin) mukofoti: ${rank.toLocaleString()} Dang${scrollDang > 0 ? `\n- Qolgan tumor hisob-kitobi: ${scrollDang.toLocaleString()} Dang` : ''}\n\nJami ${total.toLocaleString()} Dang berildi! Bu oy ham omad!`,
     attendanceComplete: (day, label) => `📅 [Davomat yakunlandi] ${day}-kun\n\n${label}\n\nHar kuni kiring — 7-kunda katta mukofot kutmoqda!`,
     duelExhausted: "⚠️ Bugungi 10 ta jang huquqini sarfladingiz!",
     noWeaponForDuel: 'Qurol taqilmagan!',
@@ -495,6 +505,8 @@ export const gameDict = {
 
   si: {
     appTitle: 'ශක්තිමත් කිරීමේ ක්‍රීඩාව',
+    maintenanceTitle: '⚙️ මාසික නඩත්තුව',
+    maintenanceDesc: 'සෑම මාසයකම අවසාන දිනයේ 23:30 සිට\nඊළඟ දිනයේ 01:30 දක්වා\nශ්‍රේණිගත කිරීම් සහ සමය පියවීම සඳහා\nක්‍රීඩාව තාවකාලිකව භාවිතා කළ නොහැක.\nකරුණාකර මඳක් රැඳී සිටින්න!',
     backToHome: 'මුල් පිටුවට',
     serverConnecting: 'සර්වරයට සම්බන්ධ වෙමින්...',
     errorTitle: '⚠️ දෝෂයක් සිදු විය',
@@ -543,7 +555,7 @@ export const gameDict = {
     weaponNames: { normal: 'අලුත් කැත ලී කඩුව', magic: 'වානේ දිගු කඩුව', rare: 'අධ්‍යාත්මික කඩුව', epic: 'විනාශකාරී කඩුව', legendary: 'ඝාතකයාගේ රන් කඩුව' },
     startWeaponNames: { magic: 'අලුත් දිගු කඩුව', normal: 'අලුත් ලී කඩුව' },
     noNickname: 'නමක් නැත', unranked: 'ශ්‍රේණිගත නොවේ', bareFists: 'හිස් අත්', itemNormalScroll: 'සාමාන්\u200dය ලියවිල්ල', itemBlessedScroll: 'ආශිර්වාද ලියවිල්ල', itemScrollBox: 'ලියවිලි පෙට්ටිය', itemWeaponBox: 'ආයුධ පෙට්ටිය', itemProtectScroll: 'ආරක්ෂණ ලියවිල්ල', day7Complete: '7 දින අඛණ්ඩව සම්පූර්ණයි!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [මාසික සමයේ ත්‍යාගය]\n\nනව මාසයක් ආරම්භ විය!\n- පිවිසුම් ත්‍යාගය: ${basic.toLocaleString()} ඩෑං\n- පෙර සමයේ ශ්‍රේණිය (#${myRank}) ත්‍යාගය: ${rank.toLocaleString()} ඩෑං\n\nමුළු ${total.toLocaleString()} ඩෑං ලැබී ඇත! මේ මාසයේත් ජය!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [මාසික සමයේ ත්‍යාගය]\n\nනව සමයක් ආරම්භ වී ශ්‍රේණිගත කිරීම් නැවත සකසන ලදී!\n- පිවිසුම් ත්‍යාගය: ${basic.toLocaleString()} ඩෑං\n- පෙර සමයේ ශ්‍රේණිය (#${myRank}) ත්‍යාගය: ${rank.toLocaleString()} ඩෑං${scrollDang > 0 ? `\n- ඉතිරි අකුරු පත් ගණනය: ${scrollDang.toLocaleString()} ඩෑං` : ''}\n\nමුළු ${total.toLocaleString()} ඩෑං ලැබී ඇත! මේ මාසයේත් ජය!`,
     attendanceComplete: (day, label) => `📅 [පැමිණීම සම්පූර්ණයි] දින ${day}\n\n${label}\n\nදිනපතා පිවිසෙන්න — 7 වන දිනට විශාල ත්‍යාගයක්!`,
     duelExhausted: '⚠️ අද සටන් (10) සියල්ල භාවිතා කර ඇත!',
     noWeaponForDuel: 'ආයුධයක් සන්නද්ධ කර නැත!',
@@ -593,6 +605,8 @@ export const gameDict = {
 
   id: {
     appTitle: 'Game Penguatan',
+    maintenanceTitle: '⚙️ Pemeliharaan Bulanan',
+    maintenanceDesc: 'Game tidak dapat digunakan sementara\ndari pukul 23:30 hari terakhir bulan\nhingga 01:30 keesokan harinya\nuntuk perhitungan peringkat dan penyelesaian musim.\nMohon tunggu sebentar!',
     backToHome: 'Kembali ke Beranda',
     serverConnecting: 'Menghubungkan ke server...',
     errorTitle: '⚠️ Terjadi kesalahan',
@@ -641,7 +655,7 @@ export const gameDict = {
     weaponNames: { normal: 'Pedang Kayu Pemula', magic: 'Pedang Panjang Baja', rare: 'Pedang Ksatria Roh', epic: 'Pedang Kehancuran', legendary: 'Pedang Emas Algojo' },
     startWeaponNames: { magic: 'Pedang Panjang Pemula', normal: 'Pedang Kayu Pemula' },
     noNickname: 'Tanpa Nama', unranked: 'Tidak Berperingkat', bareFists: 'Tangan Kosong', itemNormalScroll: 'Gulungan Biasa', itemBlessedScroll: 'Gulungan Berkat', itemScrollBox: 'Kotak Gulungan', itemWeaponBox: 'Kotak Senjata', itemProtectScroll: 'Gulungan Proteksi', day7Complete: 'Streak 7 hari selesai!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Hadiah Musim Bulanan]\n\nBulan baru telah dimulai!\n- Bonus login: ${basic.toLocaleString()} Dang\n- Bonus peringkat musim lalu (#${myRank}): ${rank.toLocaleString()} Dang\n\nTotal ${total.toLocaleString()} Dang diberikan! Semangat bulan ini!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Hadiah Musim Bulanan]\n\nMusim baru telah dimulai dan peringkat telah direset!\n- Bonus login: ${basic.toLocaleString()} Dang\n- Bonus peringkat musim lalu (#${myRank}): ${rank.toLocaleString()} Dang${scrollDang > 0 ? `\n- Penyelesaian gulungan tersisa: ${scrollDang.toLocaleString()} Dang` : ''}\n\nTotal ${total.toLocaleString()} Dang diberikan! Semangat bulan ini!`,
     attendanceComplete: (day, label) => `📅 [Presensi Selesai] Hari ke-${day}\n\n${label}\n\nMasuk setiap hari — hari ke-7 ada hadiah besar!`,
     duelExhausted: '⚠️ Anda telah menggunakan semua 10 duel hari ini!',
     noWeaponForDuel: 'Tidak ada senjata terpasang!',
@@ -691,6 +705,8 @@ export const gameDict = {
 
   tl: {
     appTitle: 'Laro ng Pagpapahusay',
+    maintenanceTitle: '⚙️ Buwanang Maintenance',
+    maintenanceDesc: 'Pansamantalang hindi available ang laro\nmula 23:30 sa huling araw ng buwan\nhanggang 01:30 kinabukasan\npara sa pagtatally ng ranggo at settlement ng season.\nMaghintay lang po!',
     backToHome: 'Bumalik sa Home',
     serverConnecting: 'Kumokonekta sa server...',
     errorTitle: '⚠️ May naganap na error',
@@ -739,7 +755,7 @@ export const gameDict = {
     weaponNames: { normal: 'Kahoy na Espada ng Baguhan', magic: 'Asero na Mahabang Espada', rare: 'Espada ng Kabalyerong Espiritu', epic: 'Espada ng Kapahamakan', legendary: 'Gintong Espada ng Berdugo' },
     startWeaponNames: { magic: 'Mahabang Espada ng Baguhan', normal: 'Kahoy na Espada ng Baguhan' },
     noNickname: 'Walang Pangalan', unranked: 'Hindi Naranggo', bareFists: 'Walang Sandata', itemNormalScroll: 'Normal Scroll', itemBlessedScroll: 'Blessed Scroll', itemScrollBox: 'Scroll Box', itemWeaponBox: 'Weapon Box', itemProtectScroll: 'Protection Scroll', day7Complete: 'Kumpleto ang 7-araw na streak!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Buwanang Gantimpala ng Season]\n\nNagsimula na ang bagong buwan!\n- Bonus sa login: ${basic.toLocaleString()} Dang\n- Bonus sa nakaraang ranggo (#${myRank}): ${rank.toLocaleString()} Dang\n\nKabuuang ${total.toLocaleString()} Dang ang ibinigay! Good luck ngayong buwan!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Buwanang Gantimpala ng Season]\n\nNagsimula ang bagong season at na-reset ang ranggo!\n- Bonus sa login: ${basic.toLocaleString()} Dang\n- Bonus sa nakaraang ranggo (#${myRank}): ${rank.toLocaleString()} Dang${scrollDang > 0 ? `\n- Pag-convert ng natitirang scroll: ${scrollDang.toLocaleString()} Dang` : ''}\n\nKabuuang ${total.toLocaleString()} Dang ang ibinigay! Good luck ngayong buwan!`,
     attendanceComplete: (day, label) => `📅 [Kumpleto ang Pagdalo] Araw ${day}\n\n${label}\n\nMag-log in araw-araw — may malaking gantimpala sa Araw 7!`,
     duelExhausted: '⚠️ Nagamit mo na ang lahat ng 10 laban ngayon!',
     noWeaponForDuel: 'Walang naka-equip na sandata!',
@@ -789,6 +805,8 @@ export const gameDict = {
 
   ru: {
     appTitle: 'Игра усиления',
+    maintenanceTitle: '⚙️ Ежемесячное обслуживание',
+    maintenanceDesc: 'Игра временно недоступна\nс 23:30 в последний день месяца\nдо 01:30 следующего дня\nдля подсчёта рейтинга и завершения сезона.\nПожалуйста, подождите!',
     backToHome: 'На главную',
     serverConnecting: 'Подключение к серверу...',
     errorTitle: '⚠️ Произошла ошибка',
@@ -837,7 +855,7 @@ export const gameDict = {
     weaponNames: { normal: 'Деревянный меч новичка', magic: 'Стальной длинный меч', rare: 'Клинок рыцаря духа', epic: 'Клинок гибели', legendary: 'Золотой меч палача' },
     startWeaponNames: { magic: 'Длинный меч новичка', normal: 'Деревянный меч новичка' },
     noNickname: 'Без имени', unranked: 'Вне рейтинга', bareFists: 'Голые руки', itemNormalScroll: 'Обычный свиток', itemBlessedScroll: 'Благословенный свиток', itemScrollBox: 'Сундук свитков', itemWeaponBox: 'Сундук оружия', itemProtectScroll: 'Свиток защиты', day7Complete: '7 дней подряд пройдено!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [Ежемесячная сезонная награда]\n\nНачался новый месяц!\n- Награда за вход: ${basic.toLocaleString()} Данг\n- Награда за прошлый сезон (#${myRank}): ${rank.toLocaleString()} Данг\n\nВсего выдано ${total.toLocaleString()} Данг! Удачи в этом месяце!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [Ежемесячная сезонная награда]\n\nНачался новый сезон, рейтинг сброшен!\n- Награда за вход: ${basic.toLocaleString()} Данг\n- Награда за прошлый сезон (#${myRank}): ${rank.toLocaleString()} Данг${scrollDang > 0 ? `\n- Расчёт за оставшиеся свитки: ${scrollDang.toLocaleString()} Данг` : ''}\n\nВсего выдано ${total.toLocaleString()} Данг! Удачи в этом месяце!`,
     attendanceComplete: (day, label) => `📅 [Посещение засчитано] День ${day}\n\n${label}\n\nЗаходите каждый день — на 7-й день ждёт большая награда!`,
     duelExhausted: '⚠️ Вы использовали все 10 дуэлей на сегодня!',
     noWeaponForDuel: 'Оружие не экипировано!',
@@ -887,6 +905,8 @@ export const gameDict = {
 
   th: {
     appTitle: 'เกมเสริมพลัง',
+    maintenanceTitle: '⚙️ กำลังปิดปรับปรุงประจำเดือน',
+    maintenanceDesc: 'เกมจะไม่สามารถใช้งานได้ชั่วคราว\nตั้งแต่เวลา 23:30 ของวันสุดท้ายของเดือน\nถึง 01:30 ของวันถัดไป\nเพื่อรวบรวมอันดับและปิดยอดประจำซีซั่น\nกรุณารอสักครู่!',
     backToHome: 'กลับหน้าหลัก',
     serverConnecting: 'กำลังเชื่อมต่อเซิร์ฟเวอร์...',
     errorTitle: '⚠️ เกิดข้อผิดพลาด',
@@ -935,7 +955,7 @@ export const gameDict = {
     weaponNames: { normal: 'ดาบไม้มือใหม่', magic: 'ดาบยาวเหล็กกล้า', rare: 'ดาบอัศวินวิญญาณ', epic: 'ดาบแห่งหายนะ', legendary: 'ดาบทองเพชฌฆาต' },
     startWeaponNames: { magic: 'ดาบยาวมือใหม่', normal: 'ดาบไม้มือใหม่' },
     noNickname: 'ไม่มีชื่อ', unranked: 'ไม่ติดอันดับ', bareFists: 'มือเปล่า', itemNormalScroll: 'คัมภีร์ธรรมดา', itemBlessedScroll: 'คัมภีร์รับพร', itemScrollBox: 'กล่องคัมภีร์', itemWeaponBox: 'กล่องอาวุธ', itemProtectScroll: 'คัมภีร์ป้องกัน', day7Complete: 'ครบ 7 วันติดต่อกัน!',
-    monthlyReward: (basic, rank, myRank, total) => `🎉 [รางวัลซีซั่นประจำเดือนมาถึงแล้ว]\n\nเดือนใหม่เริ่มต้นแล้ว!\n- รางวัลเข้าสู่ระบบพื้นฐาน: ${basic.toLocaleString()} แดง\n- รางวัลอันดับซีซั่นที่แล้ว (อันดับ ${myRank}): ${rank.toLocaleString()} แดง\n\nได้รับรวม ${total.toLocaleString()} แดง! สู้ๆ เดือนนี้ด้วยนะ!`,
+    monthlyReward: (basic, rank, myRank, total, scrollDang) => `🎉 [รางวัลซีซั่นประจำเดือนมาถึงแล้ว]\n\nซีซั่นใหม่เริ่มต้นแล้วและอันดับถูกรีเซ็ต!\n- รางวัลเข้าสู่ระบบพื้นฐาน: ${basic.toLocaleString()} แดง\n- รางวัลอันดับซีซั่นที่แล้ว (อันดับ ${myRank}): ${rank.toLocaleString()} แดง${scrollDang > 0 ? `\n- ยอดแลกม้วนคัมภีร์ที่เหลือ: ${scrollDang.toLocaleString()} แดง` : ''}\n\nได้รับรวม ${total.toLocaleString()} แดง! สู้ๆ เดือนนี้ด้วยนะ!`,
     attendanceComplete: (day, label) => `📅 [เช็คอินสำเร็จ] วันที่ ${day}\n\n${label}\n\nเข้าสู่ระบบทุกวัน วันที่ 7 มีรางวัลใหญ่รออยู่!`,
     duelExhausted: '⚠️ ใช้จำนวนดวลของวันนี้ (10 ครั้ง) หมดแล้ว!',
     noWeaponForDuel: 'ไม่มีอาวุธที่สวมใส่!',

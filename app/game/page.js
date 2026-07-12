@@ -46,6 +46,17 @@ const getYesterdayString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+// 💡 월말 대장점검: 매월 마지막날 23:30 ~ 다음달 1일 01:30 동안 랭킹 집계를 위해 게임 전체 이용 차단
+const isMaintenanceWindow = (now = new Date()) => {
+  const lastDayOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const isLastDay = now.getDate() === lastDayOfThisMonth;
+  const isFirstDay = now.getDate() === 1;
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  if (isLastDay && minutes >= 23 * 60 + 30) return true;
+  if (isFirstDay && minutes < 60 + 30) return true;
+  return false;
+};
+
 // 💡 출석 이벤트: 7일 주기 보상. 연속 출석이면 다음 날로, 하루라도 빠지면 1일차로 리셋.
 const ATTENDANCE_REWARDS = [
   { dang: 2000, normal_scrolls: 3, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0 },
@@ -113,8 +124,9 @@ export default function GameLobby() {
   // --- 유저 및 상태 변수 ---
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null); 
+  const [loadError, setLoadError] = useState(null);
   const [showIntro, setShowIntro] = useState(false);
+  const [inMaintenance, setInMaintenance] = useState(false);
   const [tempNickname, setTempNickname] = useState('');
   const [nickname, setNickname] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -208,12 +220,19 @@ export default function GameLobby() {
             if (myRank === 1) rankReward = 50000; else if (myRank === 2) rankReward = 30000; else if (myRank === 3) rankReward = 20000; else if (myRank <= 10) rankReward = 10000; else if (myRank <= 50) rankReward = 5000;
           }
         }
-        const monthlyBasicReward = 10000; const totalReward = monthlyBasicReward + rankReward;
+        // 💡 잔여 일반/축복 주문서는 댕으로 정산 후 0으로 초기화 (다음 시즌 대비)
+        const leftoverNormalScrolls = profile.normal_scrolls || 0;
+        const leftoverBlessedScrolls = profile.blessed_scrolls || 0;
+        const scrollSettlementDang = leftoverNormalScrolls * 200 + leftoverBlessedScrolls * 600;
+
+        const monthlyBasicReward = 10000; const totalReward = monthlyBasicReward + rankReward + scrollSettlementDang;
         const newDang = (profile.dang || 0) + totalReward;
 
-        await supabase.from('game_profiles').update({ dang: newDang, last_reward_month: currentMonth }).eq('id', userId).then(checkDB);
-        profile.dang = newDang; 
-        setTimeout(() => { alert(gt.monthlyReward(monthlyBasicReward, rankReward, myRank, totalReward)); }, 500);
+        await supabase.from('game_profiles').update({
+          dang: newDang, points: 1000, normal_scrolls: 0, blessed_scrolls: 0, last_reward_month: currentMonth
+        }).eq('id', userId).then(checkDB);
+        profile.dang = newDang; profile.points = 1000; profile.normal_scrolls = 0; profile.blessed_scrolls = 0;
+        setTimeout(() => { alert(gt.monthlyReward(monthlyBasicReward, rankReward, myRank, totalReward, scrollSettlementDang)); }, 500);
       }
 
       // 💡 출석 이벤트: 오늘 첫 접속이면 보상 지급 (연속 출석일수에 따라 7일 주기 순환)
@@ -260,6 +279,14 @@ export default function GameLobby() {
   }, [gt]);
 
   useEffect(() => {
+    const checkMaintenance = () => setInMaintenance(isMaintenanceWindow());
+    checkMaintenance();
+    const timer = setInterval(checkMaintenance, 30 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (inMaintenance) return;
     const initApp = async () => {
       try {
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error("환경변수 오류");
@@ -270,7 +297,7 @@ export default function GameLobby() {
       } catch (error) { setLoadError(error.message); }
     };
     initApp();
-  }, [loadGameData]);
+  }, [loadGameData, inMaintenance]);
 
   useEffect(() => {
     if (activeTab === 'arena') {
@@ -654,6 +681,15 @@ export default function GameLobby() {
       </div>
     );
   };
+
+  if (inMaintenance) return (
+    <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6 text-center">
+      <div className="text-6xl mb-4">🛠️</div>
+      <h1 className="text-xl font-black text-yellow-500 mb-4">{gt.maintenanceTitle}</h1>
+      <p className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">{gt.maintenanceDesc}</p>
+      <Link href="/" className="mt-8 text-xs text-gray-500 underline">{gt.backToHome}</Link>
+    </div>
+  );
 
   if (loading) return <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6 font-bold">{gt.serverConnecting}</div>;
 
