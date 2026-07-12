@@ -647,15 +647,16 @@ export default function GameLobby() {
         </div>
 
         {/* 💡 [최종 수정] 메인 영역: 스크롤은 여기서만 일어남. pb-[80px]로 하단 메뉴에 가려지지 않게 여백 추가 */}
-        <main className="flex-1 overflow-y-auto min-h-0 relative z-10 p-2 pb-[80px]">
+        <main className={activeTab === 'enhance' ? "flex-1 flex flex-col min-h-0 relative z-10 p-2 pb-[65px]" : "flex-1 overflow-y-auto min-h-0 relative z-10 p-2 pb-[80px]"}>
           {activeTab === 'enhance' && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 h-full">
               <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
                 <button disabled={isProcessing} onClick={() => setSelectedScrollType('normal')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'normal' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>📜 일반 (+1)</button>
                 <button disabled={isProcessing} onClick={() => setSelectedScrollType('blessed')} className={`flex-1 py-1.5 rounded-lg border font-black text-[11px] transition-all disabled:opacity-50 ${selectedScrollType === 'blessed' ? 'bg-cyan-600 border-cyan-300 text-white' : 'bg-gray-900 border-gray-700 text-gray-500'}`}>✨ 축복 (+1~3)</button>
               </div>
-              
-              <div className={`flex flex-col border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
+
+              {/* 본장비: 화면 절반을 채움 (무기가 없어도 카드 자체는 항상 절반 유지) */}
+              <div className={`flex-1 min-h-[150px] flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${mainWeapon ? gradeCardStyles[mainWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
                 <div className="flex justify-between items-start shrink-0">
                   <div className="flex flex-col">
                     <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${mainWeapon ? gradeTextColors[mainWeapon.weapon_grade] : 'text-gray-500'}`}>[{mainWeapon ? getGradeLabel(mainWeapon.weapon_grade) : '비어있음'}]</span>
@@ -670,8 +671,8 @@ export default function GameLobby() {
                     <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{mainCurrentProtect} / {mainMaxProtect}</span></p>
                   </div>
                 </div>
-                
-                <div className="flex justify-center items-center py-2">
+
+                <div className="flex-1 min-h-0 flex justify-center items-center">
                   {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-32 h-32 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
                 </div>
 
@@ -682,7 +683,8 @@ export default function GameLobby() {
 
               <div className="flex justify-center -my-3 z-20 shrink-0"><button disabled={isProcessing} onClick={handleSwap} className="bg-gray-800 border-2 border-gray-500 text-[9px] font-bold px-3 py-1 rounded-full shadow-2xl active:scale-95 text-white disabled:opacity-50">⬆️ 무기 교체 ⬇️</button></div>
 
-              <div className={`flex flex-col border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
+              {/* 보조장비: 본장비와 동일하게 화면 절반을 채움 */}
+              <div className={`flex-1 min-h-[150px] flex flex-col justify-between border-2 rounded-xl p-2 shadow-lg transition-all ${subWeapon ? gradeCardStyles[subWeapon.weapon_grade] : 'border-gray-700 bg-gray-900'}`}>
                 <div className="flex justify-between items-start shrink-0">
                   <div className="flex flex-col">
                     <span className={`text-[9px] font-bold tracking-wider mb-0.5 ${subWeapon ? gradeTextColors[subWeapon.weapon_grade] : 'text-gray-500'}`}>[{subWeapon ? getGradeLabel(subWeapon.weapon_grade) : '비어있음'}]</span>
@@ -697,9 +699,9 @@ export default function GameLobby() {
                     <p className="text-[8px] text-gray-400 mt-0.5">방어 가능 횟수 <span className="text-blue-400">{subCurrentProtect} / {subMaxProtect}</span></p>
                   </div>
                 </div>
-                
-                {/* 💡 [수정] 서브장비 이미지도 본장비와 동일한 크기(w-32 h-32) 및 여백(py-2)으로 고정 */}
-                <div className="flex justify-center items-center py-2">
+
+                {/* 💡 [수정] 서브장비 이미지도 본장비와 동일하게 남는 공간을 꽉 채움 */}
+                <div className="flex-1 min-h-0 flex justify-center items-center">
                    {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
                 </div>
 
