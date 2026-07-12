@@ -382,7 +382,7 @@ export default function GameLobby() {
     setTimeout(async () => {
       setShowingAd(false);
       try {
-        const reward = 2000;
+        const reward = 10000;
         await supabase.from('game_profiles').update({ dang: dang + reward }).eq('id', user).then(checkDB);
         setPopupMsg(gt.adRewardMsg(reward));
         await loadGameData(user);
