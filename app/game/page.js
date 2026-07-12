@@ -40,13 +40,13 @@ const getYesterdayString = () => {
 
 // 💡 출석 이벤트: 7일 주기 보상. 연속 출석이면 다음 날로, 하루라도 빠지면 1일차로 리셋.
 const ATTENDANCE_REWARDS = [
-  { dang: 500, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 500 댕' },
-  { dang: 1000, normal_scrolls: 3, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 1,000 댕 + 📜 일반 주문서 3개' },
-  { dang: 1500, normal_scrolls: 0, blessed_scrolls: 1, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 1,500 댕 + ✨ 축복 주문서 1개' },
-  { dang: 2000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 1, weapon_boxes: 0, protect_scrolls: 0, label: '💰 2,000 댕 + 📦 주문서 상자 1개' },
-  { dang: 2500, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 1, protect_scrolls: 0, label: '💰 2,500 댕 + 🗡️ 무기 상자 1개' },
-  { dang: 3000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 1, label: '💰 3,000 댕 + 🛡️ 파괴방지 주문서 1개' },
-  { dang: 8000, normal_scrolls: 0, blessed_scrolls: 2, scroll_boxes: 0, weapon_boxes: 2, protect_scrolls: 0, label: '💰 8,000 댕 + ✨ 축복 주문서 2개 + 🗡️ 무기 상자 2개 (7일 연속 완주!)' },
+  { dang: 2000, normal_scrolls: 3, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 2,000 댕 + 📜 일반 주문서 3개' },
+  { dang: 3000, normal_scrolls: 5, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 3,000 댕 + 📜 일반 주문서 5개' },
+  { dang: 4000, normal_scrolls: 0, blessed_scrolls: 2, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 4,000 댕 + ✨ 축복 주문서 2개' },
+  { dang: 5000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 2, weapon_boxes: 0, protect_scrolls: 0, label: '💰 5,000 댕 + 📦 주문서 상자 2개' },
+  { dang: 6000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 2, protect_scrolls: 0, label: '💰 6,000 댕 + 🗡️ 무기 상자 2개' },
+  { dang: 8000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 2, label: '💰 8,000 댕 + 🛡️ 파괴방지 주문서 2개' },
+  { dang: 20000, normal_scrolls: 0, blessed_scrolls: 3, scroll_boxes: 0, weapon_boxes: 3, protect_scrolls: 0, label: '💰 20,000 댕 + ✨ 축복 주문서 3개 + 🗡️ 무기 상자 3개 (7일 연속 완주!)' },
 ];
 
 // DB 침묵 에러 탐지기
