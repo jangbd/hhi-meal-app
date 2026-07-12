@@ -360,6 +360,7 @@ export default function MatchingHub() {
               <Link href="/" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_meal || '🍱 식단'}</Link>
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_bus || '🚌 버스 시간표'}</Link>
               <Link href="/points" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
+              <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_settings || '⚙️ 설정'}</Link>
             </nav>
           </div>
