@@ -724,54 +724,54 @@ export default function GameLobby() {
                     const item = inventory[i];
                     if (item) {
                         return (
-                            <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`aspect-square cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
+                            <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`h-12 cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
                                <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
-                               {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-8 h-8 my-0.5')}
+                               {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-6 h-6')}
                                <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
                             </div>
                         );
                     }
-                    return <div key={`empty-${i}`} className="aspect-square bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
+                    return <div key={`empty-${i}`} className="h-12 bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
                   })}
                 </div>
               </div>
 
-              <div className="bg-gray-800 rounded-lg p-2 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2 mt-2">
-                <div className="flex justify-between items-center mb-2">
+              <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2 mt-1">
+                <div className="flex justify-between items-center mb-1.5">
                   <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
                   <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
-                    <p className="text-[10px] font-bold text-gray-300 mb-1">📜 의문 주문서</p>
+                  <div className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col">
+                    <p className="text-[10px] font-bold text-gray-300 mb-0.5">📜 의문 주문서</p>
                     <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
                       <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
                       <span className="text-xs font-black w-6 text-center">{buyQtyScroll}</span>
                       <button disabled={isProcessing} onClick={() => setBuyQtyScroll(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
                     </div>
-                    <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({300 * buyQtyScroll}댕)</button>
-                    
-                    <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
-                      <p className="text-[9px] text-gray-400 mb-0.5">보유: {scrollBoxes}개</p>
-                      <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                      <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                    <button disabled={isProcessing} onClick={() => handleBuyBox('scroll', 300, buyQtyScroll)} className="w-full bg-yellow-600 font-bold text-[10px] py-1 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-1.5">구매 ({300 * buyQtyScroll}댕)</button>
+
+                    <div className="border-t border-gray-700 pt-1.5 flex flex-col gap-1 mt-auto">
+                      <p className="text-[9px] text-gray-400">보유: {scrollBoxes}개</p>
+                      <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                      <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
                     </div>
                   </div>
 
-                  <div className="flex-1 bg-gray-900 p-2 rounded-md text-center border border-gray-700 flex flex-col">
-                    <p className="text-[10px] font-bold text-gray-300 mb-1">🗡️ 고급 무기</p>
+                  <div className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col">
+                    <p className="text-[10px] font-bold text-gray-300 mb-0.5">🗡️ 고급 무기</p>
                     <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
                       <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => Math.max(1, prev-1))} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">-</button>
                       <span className="text-xs font-black w-6 text-center">{buyQtyWeapon}</span>
                       <button disabled={isProcessing} onClick={() => setBuyQtyWeapon(prev => prev+1)} className="w-6 h-6 flex items-center justify-center bg-gray-700 rounded text-sm font-black text-white hover:bg-gray-600 disabled:opacity-50">+</button>
                     </div>
-                    <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1.5 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-3">구매 ({1000 * buyQtyWeapon}댕)</button>
-                    
-                    <div className="border-t border-gray-700 pt-2 flex flex-col gap-1.5 mt-auto">
-                      <p className="text-[9px] text-gray-400 mb-0.5">보유: {weaponBoxes}개</p>
-                      <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                      <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                    <button disabled={isProcessing} onClick={() => handleBuyBox('weapon', 1000, buyQtyWeapon)} className="w-full bg-yellow-600 font-bold text-[10px] py-1 rounded text-white active:bg-yellow-500 shadow-md disabled:opacity-50 mb-1.5">구매 ({1000 * buyQtyWeapon}댕)</button>
+
+                    <div className="border-t border-gray-700 pt-1.5 flex flex-col gap-1 mt-auto">
+                      <p className="text-[9px] text-gray-400">보유: {weaponBoxes}개</p>
+                      <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
+                      <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
                     </div>
                   </div>
                 </div>
