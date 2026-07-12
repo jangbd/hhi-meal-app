@@ -4,6 +4,7 @@
 export const gameDict = {
   ko: {
     appTitle: '강화의 신',
+    backToHome: '메인으로',
     serverConnecting: '서버 연결 중...',
     errorTitle: '⚠️ 오류가 발생했습니다',
     nicknamePrompt: '닉네임을 입력하세요',
@@ -102,6 +103,7 @@ export const gameDict = {
 
   en: {
     appTitle: 'Enhancement Game',
+    backToHome: 'Back to Home',
     serverConnecting: 'Connecting to server...',
     errorTitle: '⚠️ An error occurred',
     nicknamePrompt: 'Enter a nickname',
@@ -199,6 +201,7 @@ export const gameDict = {
 
   vi: {
     appTitle: 'Trò chơi Cường hóa',
+    backToHome: 'Về trang chính',
     serverConnecting: 'Đang kết nối máy chủ...',
     errorTitle: '⚠️ Đã xảy ra lỗi',
     nicknamePrompt: 'Nhập biệt danh',
@@ -296,6 +299,7 @@ export const gameDict = {
 
   zh: {
     appTitle: '强化之神',
+    backToHome: '返回主页',
     serverConnecting: '正在连接服务器...',
     errorTitle: '⚠️ 发生错误',
     nicknamePrompt: '请输入昵称',
@@ -393,6 +397,7 @@ export const gameDict = {
 
   uz: {
     appTitle: 'Kuchaytirish O\'yini',
+    backToHome: 'Bosh sahifaga',
     serverConnecting: 'Serverga ulanmoqda...',
     errorTitle: '⚠️ Xatolik yuz berdi',
     nicknamePrompt: 'Taxallus kiriting',
@@ -490,6 +495,7 @@ export const gameDict = {
 
   si: {
     appTitle: 'ශක්තිමත් කිරීමේ ක්‍රීඩාව',
+    backToHome: 'මුල් පිටුවට',
     serverConnecting: 'සර්වරයට සම්බන්ධ වෙමින්...',
     errorTitle: '⚠️ දෝෂයක් සිදු විය',
     nicknamePrompt: 'අන්වර්ථ නාමයක් ඇතුළත් කරන්න',
@@ -587,6 +593,7 @@ export const gameDict = {
 
   id: {
     appTitle: 'Game Penguatan',
+    backToHome: 'Kembali ke Beranda',
     serverConnecting: 'Menghubungkan ke server...',
     errorTitle: '⚠️ Terjadi kesalahan',
     nicknamePrompt: 'Masukkan nama panggilan',
@@ -684,6 +691,7 @@ export const gameDict = {
 
   tl: {
     appTitle: 'Laro ng Pagpapahusay',
+    backToHome: 'Bumalik sa Home',
     serverConnecting: 'Kumokonekta sa server...',
     errorTitle: '⚠️ May naganap na error',
     nicknamePrompt: 'Maglagay ng palayaw',
@@ -781,6 +789,7 @@ export const gameDict = {
 
   ru: {
     appTitle: 'Игра усиления',
+    backToHome: 'На главную',
     serverConnecting: 'Подключение к серверу...',
     errorTitle: '⚠️ Произошла ошибка',
     nicknamePrompt: 'Введите никнейм',
@@ -878,6 +887,7 @@ export const gameDict = {
 
   th: {
     appTitle: 'เกมเสริมพลัง',
+    backToHome: 'กลับหน้าหลัก',
     serverConnecting: 'กำลังเชื่อมต่อเซิร์ฟเวอร์...',
     errorTitle: '⚠️ เกิดข้อผิดพลาด',
     nicknamePrompt: 'กรุณาใส่ชื่อเล่น',

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { gameDict } from './gameI18n';
 
@@ -689,9 +690,14 @@ export default function GameLobby() {
 
         {/* 상단 고정 헤더 영역 */}
         <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
-          <h1 className="font-black text-lg text-yellow-500 tracking-wider">{gt.appTitle}</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <Link href="/" className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-gray-800 border border-gray-700 text-gray-300 text-sm active:bg-gray-700" aria-label={gt.backToHome} title={gt.backToHome}>
+              ←
+            </Link>
+            <h1 className="font-black text-lg text-yellow-500 tracking-wider truncate">{gt.appTitle}</h1>
+          </div>
           {attendanceStreak > 0 && (
-            <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-700 px-2 py-1 rounded-full">{gt.attendanceBadge(attendanceStreak)}</span>
+            <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-700 px-2 py-1 rounded-full shrink-0">{gt.attendanceBadge(attendanceStreak)}</span>
           )}
         </header>
 
