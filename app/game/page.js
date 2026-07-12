@@ -103,6 +103,7 @@ export default function GameLobby() {
   const [dang, setDang] = useState(0); 
   const [enhanceCount, setEnhanceCount] = useState(0);
   const [duelCount, setDuelCount] = useState(10);
+  const [attendanceStreak, setAttendanceStreak] = useState(0);
 
   // 아이템 보유량
   const [weaponBoxes, setWeaponBoxes] = useState(0);        
@@ -223,7 +224,7 @@ export default function GameLobby() {
         await supabase.from('game_profiles').update({ duel_count: 10, last_duel_date: today }).eq('id', userId).then(checkDB);
       }
 
-      setNickname(profile.nickname || '이름없음'); setPoints(profile.points || 0); setDang(profile.dang || 0); setEnhanceCount(profile.enhance_count || 0); setDuelCount(currentDuelCount); 
+      setNickname(profile.nickname || '이름없음'); setPoints(profile.points || 0); setDang(profile.dang || 0); setEnhanceCount(profile.enhance_count || 0); setDuelCount(currentDuelCount); setAttendanceStreak(profile.attendance_streak || 0);
       setWeaponBoxes(profile.weapon_boxes || 0); setScrollBoxes(profile.scroll_boxes || 0); setNormalScrolls(profile.normal_scrolls || 0); setBlessedScrolls(profile.blessed_scrolls || 0); setProtectScrolls(profile.protect_scrolls || 0);
 
       const { data: weapons, error: weaponErr } = await supabase.from('weapons').select('*').eq('user_id', userId);
@@ -671,6 +672,9 @@ export default function GameLobby() {
         {/* 상단 고정 헤더 영역 */}
         <header className="shrink-0 flex justify-between items-center h-12 px-4 bg-gray-900 border-b border-gray-800">
           <h1 className="font-black text-lg text-yellow-500 tracking-wider">강화의 신</h1>
+          {attendanceStreak > 0 && (
+            <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-700 px-2 py-1 rounded-full">📅 출석 {attendanceStreak}일차</span>
+          )}
         </header>
         
         <div className="shrink-0 bg-gray-800 px-3 py-1.5 flex justify-between items-center shadow-md">
