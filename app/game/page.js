@@ -736,13 +736,13 @@ export default function GameLobby() {
                 </div>
               </div>
 
-              <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col flex-1 min-h-[150px] mb-2 mt-1">
+              <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2 mt-1">
                 <div className="flex justify-between items-center mb-1.5">
                   <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
                   <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
                 </div>
 
-                <div className="flex gap-2 flex-1">
+                <div className="flex gap-2">
                   <div className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col">
                     <p className="text-[10px] font-bold text-gray-300 mb-0.5">📜 의문 주문서</p>
                     <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
