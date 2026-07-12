@@ -608,7 +608,7 @@ export default function GameLobby() {
 
   return (
     /* 💡 [최종 수정] fixed inset-0을 기반으로 100% 꽉 채우고 스크롤 영역을 내부에 가두는 'Absolute Anchoring' 방식 적용 */
-    <div className="fixed inset-0 bg-black flex justify-center z-40">
+    <div className="fixed top-0 left-0 right-0 bottom-[65px] bg-black flex justify-center z-40">
       <div className="w-full max-w-md h-full flex flex-col bg-gray-950 text-white font-sans relative overflow-hidden">
         
         {showingAd && (
@@ -671,8 +671,8 @@ export default function GameLobby() {
                   </div>
                 </div>
                 
-                <div className="flex justify-center items-center py-4">
-                  {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-44 h-44 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
+                <div className="flex justify-center items-center py-2">
+                  {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-32 h-32 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
                 </div>
 
                 <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
@@ -698,9 +698,9 @@ export default function GameLobby() {
                   </div>
                 </div>
                 
-                {/* 💡 [수정] 서브장비 이미지도 본장비와 동일한 크기(w-44 h-44) 및 여백(py-4)으로 고정 */}
-                <div className="flex justify-center items-center py-4">
-                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-44 h-44 drop-shadow-xl') : <div className="text-5xl">❌</div>}
+                {/* 💡 [수정] 서브장비 이미지도 본장비와 동일한 크기(w-32 h-32) 및 여백(py-2)으로 고정 */}
+                <div className="flex justify-center items-center py-2">
+                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
                 </div>
 
                 <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
@@ -779,15 +779,18 @@ export default function GameLobby() {
 
           {activeTab === 'arena' && (
             <div className="flex flex-col gap-2 pb-2">
-              <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
-                <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
-                <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
-              </div>
+              {/* 💡 결투 횟수 + 랭킹 필터는 화면 상단에 고정, 아래 랭킹 목록만 스크롤됨 */}
+              <div className="sticky top-0 z-20 bg-gray-950 pb-2 flex flex-col gap-2">
+                <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
+                  <span className="text-gray-400">🔥 일일 결투 가능 횟수</span>
+                  <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>⚔️ {duelCount} / 10 회</span>
+                </div>
 
-              <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
-                <button disabled={isProcessing} onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
-                <button disabled={isProcessing} onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
-                <button disabled={isProcessing} onClick={() => setRankType('points')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'points' ? 'bg-yellow-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🏆 결투 포인트</button>
+                <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
+                  <button disabled={isProcessing} onClick={() => setRankType('attack')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'attack' ? 'bg-red-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>⚔️ 공격력 랭킹</button>
+                  <button disabled={isProcessing} onClick={() => setRankType('enhance')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'enhance' ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🛠️ 강화 횟수</button>
+                  <button disabled={isProcessing} onClick={() => setRankType('points')} className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-colors disabled:opacity-50 ${rankType === 'points' ? 'bg-yellow-600 text-white shadow-inner' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>🏆 결투 포인트</button>
+                </div>
               </div>
               
               <div className="flex-1 bg-gray-800 rounded-xl border border-gray-700 p-2 shadow-inner">
