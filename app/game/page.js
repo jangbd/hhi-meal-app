@@ -43,8 +43,12 @@ const WEAPON_CONFIG = {
   magic: { baseAtk: 120, gainMin: 40, gainMax: 100, protect: 3, basePrice: 300, limitMult: 5 },
   rare: { baseAtk: 800, gainMin: 300, gainMax: 800, protect: 3, basePrice: 1000, limitMult: 40 }, 
   epic: { baseAtk: 5000, gainMin: 2000, gainMax: 5000, protect: 2, basePrice: 5000, limitMult: 300 }, 
-  legendary: { baseAtk: 25000, gainMin: 10000, gainMax: 30000, protect: 1, basePrice: 20000, limitMult: 2500 } 
+  legendary: { baseAtk: 25000, gainMin: 10000, gainMax: 30000, protect: 1, basePrice: 20000, limitMult: 2500 }
 };
+
+// 💡 등급별 원본 이미지(weapon_*.png)의 실제 검 폭이 서로 달라(마법 23% ~ 희귀 40%, 세로는 모두 동일) 같은 박스에 그리면
+// 마법 등급이 유독 얇고 작아 보임. 세로는 건드리지 않고 가로 폭만 등급별로 보정.
+const WEAPON_IMG_SCALE_X = { normal: 1.17, magic: 1.72, rare: 1.0, epic: 1.15, legendary: 1.2 };
 
 // 등급 및 레벨별 강화 성공 확률
 const getSuccessRate = (grade, level) => {
@@ -579,10 +583,11 @@ export default function GameLobby() {
   const renderWeaponImage = (weaponGrade, enhancementLevel, sizeClass) => {
     const auraClass = getAuraClass(enhancementLevel);
     const auraStyle = getAuraStyle(enhancementLevel);
+    const scaleX = WEAPON_IMG_SCALE_X[weaponGrade] || 1;
     const imagePath = `/images/weapon_${weaponGrade}.png`;
     return (
       <div className={`relative flex items-center justify-center ${sizeClass} ${auraClass}`} style={auraStyle}>
-        <img src={imagePath} alt={`${weaponGrade} weapon`} className="w-full h-full object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+        <img src={imagePath} alt={`${weaponGrade} weapon`} className="w-full h-full object-contain" style={{ transform: `scaleX(${scaleX})` }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
         <span className="hidden text-5xl" style={{ display: 'none' }}>🗡️</span>
       </div>
     );
