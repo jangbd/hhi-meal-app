@@ -31,6 +31,24 @@ const getCurrentMonthString = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// 어제 날짜 구하기 (출석 연속 여부 판단용)
+const getYesterdayString = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// 💡 출석 이벤트: 7일 주기 보상. 연속 출석이면 다음 날로, 하루라도 빠지면 1일차로 리셋.
+const ATTENDANCE_REWARDS = [
+  { dang: 500, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 500 댕' },
+  { dang: 1000, normal_scrolls: 3, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 1,000 댕 + 📜 일반 주문서 3개' },
+  { dang: 1500, normal_scrolls: 0, blessed_scrolls: 1, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 0, label: '💰 1,500 댕 + ✨ 축복 주문서 1개' },
+  { dang: 2000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 1, weapon_boxes: 0, protect_scrolls: 0, label: '💰 2,000 댕 + 📦 주문서 상자 1개' },
+  { dang: 2500, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 1, protect_scrolls: 0, label: '💰 2,500 댕 + 🗡️ 무기 상자 1개' },
+  { dang: 3000, normal_scrolls: 0, blessed_scrolls: 0, scroll_boxes: 0, weapon_boxes: 0, protect_scrolls: 1, label: '💰 3,000 댕 + 🛡️ 파괴방지 주문서 1개' },
+  { dang: 8000, normal_scrolls: 0, blessed_scrolls: 2, scroll_boxes: 0, weapon_boxes: 2, protect_scrolls: 0, label: '💰 8,000 댕 + ✨ 축복 주문서 2개 + 🗡️ 무기 상자 2개 (7일 연속 완주!)' },
+];
+
 // DB 침묵 에러 탐지기
 const checkDB = (res) => {
   if (res.error) throw new Error(res.error.message);
@@ -172,6 +190,30 @@ export default function GameLobby() {
         await supabase.from('game_profiles').update({ dang: newDang, last_reward_month: currentMonth }).eq('id', userId).then(checkDB);
         profile.dang = newDang; 
         setTimeout(() => { alert(`🎉 [월간 시즌 보상 도착]\n\n새로운 달이 시작되었습니다!\n- 기본 접속 보상: ${monthlyBasicReward.toLocaleString()} 댕\n- 지난 시즌 랭킹(${myRank}위) 보상: ${rankReward.toLocaleString()} 댕\n\n총 ${totalReward.toLocaleString()} 댕이 지급되었습니다! 이번 달도 화이팅!`); }, 500);
+      }
+
+      // 💡 출석 이벤트: 오늘 첫 접속이면 보상 지급 (연속 출석일수에 따라 7일 주기 순환)
+      const todayForAttendance = getTodayString();
+      if (profile.last_attendance_date !== todayForAttendance) {
+        const yesterday = getYesterdayString();
+        const prevStreak = profile.attendance_streak || 0;
+        const newStreak = profile.last_attendance_date === yesterday ? (prevStreak % 7) + 1 : 1;
+        const reward = ATTENDANCE_REWARDS[newStreak - 1];
+
+        const attendanceUpdates = {
+          last_attendance_date: todayForAttendance,
+          attendance_streak: newStreak,
+          dang: (profile.dang || 0) + reward.dang,
+          normal_scrolls: (profile.normal_scrolls || 0) + reward.normal_scrolls,
+          blessed_scrolls: (profile.blessed_scrolls || 0) + reward.blessed_scrolls,
+          scroll_boxes: (profile.scroll_boxes || 0) + reward.scroll_boxes,
+          weapon_boxes: (profile.weapon_boxes || 0) + reward.weapon_boxes,
+          protect_scrolls: (profile.protect_scrolls || 0) + reward.protect_scrolls,
+        };
+        await supabase.from('game_profiles').update(attendanceUpdates).eq('id', userId).then(checkDB);
+        Object.assign(profile, attendanceUpdates);
+
+        setTimeout(() => { alert(`📅 [출석 체크 완료] ${newStreak}일차\n\n${reward.label}\n\n매일 접속하면 7일차에 대박 보상이 기다립니다!`); }, lastMonth !== currentMonth ? 1200 : 500);
       }
 
       const today = getTodayString();
@@ -833,6 +875,11 @@ export default function GameLobby() {
 
           {activeTab === 'guide' && (
             <div className="flex flex-col gap-3 text-[11px] pb-4">
+              <div className="bg-gradient-to-r from-emerald-950/40 to-teal-950/40 border border-emerald-500/50 p-2.5 rounded-xl shadow-md shrink-0">
+                <h3 className="font-black text-emerald-400 text-xs flex items-center gap-1">📅 출석 이벤트</h3>
+                <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">매일 하루 한 번 접속하면 자동으로 보상이 지급됩니다. <span className="text-emerald-400 font-bold">연속 출석</span> 시 보상이 점점 커지며, <span className="text-yellow-400 font-black">7일차에는 댕/주문서/무기 상자가 왕창</span> 지급됩니다! 하루라도 접속을 거르면 1일차부터 다시 시작하니 매일 잊지 말고 접속하세요.</p>
+              </div>
+
               <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
                 <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">✨ 대표 추천! 10강 이후 필수 전략</h3>
                 <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">무기가 **10강 이상**일 때 주문서를 성공시키면 기본 성장 외에 <span className="text-yellow-400 font-bold">무기 등급에 비례하는 엄청난 랜덤 한계돌파 보너스</span>가 추가됩니다. (전설의 경우 수만 단위 상승!) 이때 <span className="text-cyan-400 font-black">축복받은 주문서</span>를 사용하여 한 번에 +2강, +3강이 오르면, <span className="text-orange-400 font-black">오른 레벨만큼 보너스도 중첩해서 터지니</span> 반드시 모아두세요!</p>
