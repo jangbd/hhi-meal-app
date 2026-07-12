@@ -405,7 +405,7 @@ export default function GameLobby() {
     setTimeout(async () => {
       setShowingAd(false); setActiveGacha('weapon');
       try {
-        const openCount = Math.min(weaponBoxes, availableSlots);
+        const openCount = Math.min(weaponBoxes, availableSlots, 10);
         const newWeapons = [];
         const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
 
@@ -455,14 +455,15 @@ export default function GameLobby() {
     setTimeout(async () => {
       setShowingAd(false); setActiveGacha('scroll');
       try {
+        const openCount = Math.min(scrollBoxes, 10);
         let addedNormal = 0, addedBlessed = 0, addedProtect = 0;
-        for (let i = 0; i < scrollBoxes; i++) {
+        for (let i = 0; i < openCount; i++) {
           const rand = Math.random() * 100;
           if (rand <= 10) addedProtect++; else if (rand <= 30) addedBlessed++; else addedNormal++;
         }
-        await supabase.from('game_profiles').update({ scroll_boxes: 0, protect_scrolls: protectScrolls + addedProtect, blessed_scrolls: blessedScrolls + addedBlessed, normal_scrolls: normalScrolls + addedNormal }).eq('id', user).then(checkDB);
+        await supabase.from('game_profiles').update({ scroll_boxes: scrollBoxes - openCount, protect_scrolls: protectScrolls + addedProtect, blessed_scrolls: blessedScrolls + addedBlessed, normal_scrolls: normalScrolls + addedNormal }).eq('id', user).then(checkDB);
         setTimeout(async () => {
-          setPopupMsg(`📦 상자 ${scrollBoxes}개 개봉 완료!\n\n🛡️ 파괴방지: ${addedProtect}개\n✨ 축복: ${addedBlessed}개\n📜 일반: ${addedNormal}개`);
+          setPopupMsg(`📦 상자 ${openCount}개 개봉 완료!\n\n🛡️ 파괴방지: ${addedProtect}개\n✨ 축복: ${addedBlessed}개\n📜 일반: ${addedNormal}개`);
           setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
         }, 800);
       } catch (err) { alert("오류: " + err.message); setActiveGacha(null); setIsProcessing(false); }
@@ -801,7 +802,7 @@ export default function GameLobby() {
                     <div className="border-t border-gray-700 pt-1.5 flex flex-col gap-1 mt-auto">
                       <p className="text-[9px] text-gray-400">보유: {scrollBoxes}개</p>
                       <button onClick={handleOpenScrollBox} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-800 hover:bg-indigo-700 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                      <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                      <button onClick={handleOpenAllScrollBoxes} disabled={isProcessing || activeGacha !== null || scrollBoxes <= 0} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">10개 열기</button>
                     </div>
                   </div>
 
@@ -817,7 +818,7 @@ export default function GameLobby() {
                     <div className="border-t border-gray-700 pt-1.5 flex flex-col gap-1 mt-auto">
                       <p className="text-[9px] text-gray-400">보유: {weaponBoxes}개</p>
                       <button onClick={handleOpenWeaponBox} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-800 hover:bg-emerald-700 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">1개 열기</button>
-                      <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">모두 열기</button>
+                      <button onClick={handleOpenAllWeaponBoxes} disabled={isProcessing || activeGacha !== null || weaponBoxes <= 0} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-[10px] font-black shadow-sm disabled:opacity-50">10개 열기</button>
                     </div>
                   </div>
                 </div>
