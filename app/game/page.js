@@ -647,7 +647,7 @@ export default function GameLobby() {
         </div>
 
         {/* 💡 [최종 수정] 메인 영역: 스크롤은 여기서만 일어남. pb-[80px]로 하단 메뉴에 가려지지 않게 여백 추가 */}
-        <main className={activeTab === 'enhance' ? "flex-1 flex flex-col min-h-0 relative z-10 p-2 pb-[65px]" : "flex-1 overflow-y-auto min-h-0 relative z-10 p-2 pb-[80px]"}>
+        <main className={(activeTab === 'enhance' || activeTab === 'inventory') ? "flex-1 flex flex-col min-h-0 relative z-10 p-2 pb-[65px] overflow-y-auto" : "flex-1 overflow-y-auto min-h-0 relative z-10 p-2 pb-[80px]"}>
           {activeTab === 'enhance' && (
             <div className="flex flex-col gap-2 h-full">
               <div className="flex gap-1 shrink-0 bg-gray-950 p-1">
@@ -713,7 +713,7 @@ export default function GameLobby() {
           )}
 
           {activeTab === 'inventory' && (
-            <div className="flex flex-col gap-2 pb-2">
+            <div className="min-h-full flex flex-col gap-2">
               <div className="shrink-0">
                 <div className="flex justify-between items-center mb-1 px-2">
                     <h2 className="text-[11px] font-bold text-yellow-400">🎒 무기 보관함 ({inventory.length}/20)</h2>
@@ -724,25 +724,25 @@ export default function GameLobby() {
                     const item = inventory[i];
                     if (item) {
                         return (
-                            <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`h-12 cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
+                            <div onClick={() => !isProcessing && setSelectedInvItem(item)} key={item.id} className={`h-14 cursor-pointer active:scale-95 transition-transform bg-gray-900 rounded-md border flex flex-col items-center justify-center p-0.5 shadow-md ${gradeCardStyles[item.weapon_grade]}`}>
                                <span className={`text-[7px] font-black ${gradeTextColors[item.weapon_grade]}`}>[{getGradeLabel(item.weapon_grade)}]</span>
-                               {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-6 h-6')}
+                               {renderWeaponImage(item.weapon_grade, item.enhancement_level, 'w-7 h-7')}
                                <span className="text-[8px] text-yellow-500 font-black">+{item.enhancement_level}</span>
                             </div>
                         );
                     }
-                    return <div key={`empty-${i}`} className="h-12 bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
+                    return <div key={`empty-${i}`} className="h-14 bg-gray-900 rounded-md border border-gray-800 flex items-center justify-center text-gray-600 text-[8px] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]">빈칸</div>;
                   })}
                 </div>
               </div>
 
-              <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col shrink-0 mb-2 mt-1">
+              <div className="bg-gray-800 rounded-lg p-1.5 border border-gray-700 mx-2 flex flex-col flex-1 min-h-[150px] mb-2 mt-1">
                 <div className="flex justify-between items-center mb-1.5">
                   <h2 className="text-[11px] font-bold text-yellow-400">🛒 상점 및 뽑기</h2>
                   <button disabled={isProcessing} onClick={handleWatchAdForDang} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">📺 지원금(2,000댕)</button>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-1">
                   <div className="flex-1 bg-gray-900 p-1.5 rounded-md text-center border border-gray-700 flex flex-col">
                     <p className="text-[10px] font-bold text-gray-300 mb-0.5">📜 의문 주문서</p>
                     <div className="flex justify-center items-center gap-1 mb-1 bg-gray-800 py-0.5 rounded">
