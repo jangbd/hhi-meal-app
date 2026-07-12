@@ -3,11 +3,19 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
+import { AdMob, BannerAdPosition, BannerAdSize, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { gameDict } from './gameI18n';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// 💡 AdMob 광고 단위 ID. 지금은 Google 공식 테스트 ID이며,
+// 실제 배포 전 AdMob 콘솔에서 발급받은 진짜 ID로 교체해야 함.
+const ADMOB_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
+const ADMOB_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
+const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
 // 💡 SSR과 클라이언트 첫 렌더가 항상 'ko'로 일치하도록 하고(하이드레이션 불일치 방지),
 // 마운트 후에만 실제 localStorage 언어값으로 전환하는 안전한 패턴
@@ -278,6 +286,25 @@ export default function GameLobby() {
     } catch (error) { setLoadError(error.message); }
   }, [gt]);
 
+  // 💡 리워드 광고 리스너는 마운트 시 한 번만 등록되므로, state 클로저(dang) 대신
+  // 항상 DB에서 최신 값을 다시 읽어와 반영해야 함 (stale closure 방지).
+  const grantAdReward = useCallback(async (userId) => {
+    try {
+      const reward = 10000;
+      const { data: freshProfile } = await supabase.from('game_profiles').select('dang').eq('id', userId).maybeSingle();
+      const currentDang = freshProfile?.dang || 0;
+      await supabase.from('game_profiles').update({ dang: currentDang + reward }).eq('id', userId).then(checkDB);
+      const curGt = gameDict[getLangSnapshot()] || gameDict.ko;
+      setPopupMsg(curGt.adRewardMsg(reward));
+      await loadGameData(userId);
+    } catch (err) {
+      const curGt = gameDict[getLangSnapshot()] || gameDict.ko;
+      alert(curGt.adRewardError(err.message || String(err)));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [loadGameData]);
+
   useEffect(() => {
     const checkMaintenance = () => setInMaintenance(isMaintenanceWindow());
     checkMaintenance();
@@ -298,6 +325,42 @@ export default function GameLobby() {
     };
     initApp();
   }, [loadGameData, inMaintenance]);
+
+  // 💡 AdMob 초기화 + 배너/리워드 광고 설정 (네이티브 앱에서만 동작)
+  useEffect(() => {
+    if (!IS_NATIVE || inMaintenance) return;
+    let rewardedListener, dismissedListener, failedListener;
+
+    const setupAds = async () => {
+      await AdMob.initialize({ initializeForTesting: true });
+      await AdMob.showBanner({
+        adId: ADMOB_BANNER_ID,
+        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+      });
+
+      rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+        const currentUser = localStorage.getItem('game_guest_uuid');
+        if (currentUser) grantAdReward(currentUser);
+      });
+      dismissedListener = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+        setShowingAd(false);
+        setIsProcessing(false);
+      });
+      failedListener = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, () => {
+        setShowingAd(false);
+        setIsProcessing(false);
+      });
+    };
+    setupAds().catch(() => {});
+
+    return () => {
+      rewardedListener?.remove();
+      dismissedListener?.remove();
+      failedListener?.remove();
+      AdMob.removeBanner().catch(() => {});
+    };
+  }, [inMaintenance, grantAdReward]);
 
   useEffect(() => {
     if (activeTab === 'arena') {
@@ -404,20 +467,27 @@ export default function GameLobby() {
   const handleWatchAdForDang = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
-    setShowingAd(true);
 
+    // 💡 네이티브 앱(Android/iOS)에서는 실제 AdMob 리워드 광고를 시청해야 보상 지급.
+    // 웹 브라우저에서는 AdMob SDK를 쓸 수 없어 기존 시뮬레이션 방식을 유지.
+    if (IS_NATIVE) {
+      try {
+        await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARD_ID });
+        setShowingAd(true);
+        await AdMob.showRewardVideoAd();
+        // 실제 보상 지급은 RewardAdPluginEvents.Rewarded 리스너에서 처리됨
+      } catch (err) {
+        setShowingAd(false);
+        setIsProcessing(false);
+        alert(gt.adRewardError(err.message || String(err)));
+      }
+      return;
+    }
+
+    setShowingAd(true);
     setTimeout(async () => {
       setShowingAd(false);
-      try {
-        const reward = 10000;
-        await supabase.from('game_profiles').update({ dang: dang + reward }).eq('id', user).then(checkDB);
-        setPopupMsg(gt.adRewardMsg(reward));
-        await loadGameData(user);
-      } catch (err) {
-        alert(gt.adRewardError(err.message));
-      } finally {
-        setIsProcessing(false);
-      }
+      await grantAdReward(user);
     }, 3000);
   };
 
