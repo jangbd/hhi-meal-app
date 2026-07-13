@@ -846,7 +846,7 @@ export default function GameLobby() {
 
         {/* 💡 메인 영역: 스크롤은 여기서만 일어남. 하단 메뉴+광고에 가려지지 않도록 실제 광고 높이(--ad-clearance) 기준 여백 추가 */}
         <main
-          className={(activeTab === 'enhance' || activeTab === 'inventory') ? "flex-1 flex flex-col min-h-0 relative z-10 p-2 overflow-y-auto" : "flex-1 overflow-y-auto min-h-0 relative z-10 p-2"}
+          className="flex-1 overflow-y-auto min-h-0 relative z-10 p-2"
           style={{ paddingBottom: 'calc(var(--ad-clearance) + 65px)' }}
         >
           {activeTab === 'enhance' && (
@@ -874,7 +874,7 @@ export default function GameLobby() {
                 </div>
 
                 <div className="flex-1 min-h-0 flex justify-center items-center">
-                  {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-32 h-32 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
+                  {mainWeapon ? renderWeaponImage(mainWeapon.weapon_grade, mainWeapon.enhancement_level, 'w-full h-full max-w-32 max-h-32 drop-shadow-2xl') : <div className="text-5xl">❌</div>}
                 </div>
 
                 <button onClick={() => clickEnhance('main')} disabled={enhancingSlot !== null || !mainWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${mainWeapon ? 'bg-red-600 border-red-400' : 'bg-gray-700 border-gray-600'}`}>
@@ -903,7 +903,7 @@ export default function GameLobby() {
 
                 {/* 💡 [수정] 서브장비 이미지도 본장비와 동일하게 남는 공간을 꽉 채움 */}
                 <div className="flex-1 min-h-0 flex justify-center items-center">
-                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-32 h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
+                   {subWeapon ? renderWeaponImage(subWeapon.weapon_grade, subWeapon.enhancement_level, 'w-full h-full max-w-32 max-h-32 drop-shadow-xl') : <div className="text-5xl">❌</div>}
                 </div>
 
                 <button onClick={() => clickEnhance('sub')} disabled={enhancingSlot !== null || !subWeapon} className={`shrink-0 w-full font-black py-2.5 rounded-lg text-white text-xs border-2 shadow-md disabled:opacity-50 ${subWeapon ? 'bg-blue-600 border-blue-400' : 'bg-gray-700 border-gray-600'}`}>
