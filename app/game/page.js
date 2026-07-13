@@ -464,15 +464,15 @@ export default function GameLobby() {
     setIsProcessing(true);
 
     // 💡 네이티브 앱(Android/iOS)에서는 실제 AdMob 리워드 광고를 시청해야 보상 지급.
+    // 실제 광고가 전체화면으로 뜨므로 자체 "광고 재생 중" 안내 화면은 띄우지 않음
+    // (안 그러면 진짜 광고가 뜨기 직전 안내 화면이 잠깐 겹쳐 보이는 문제가 있었음).
     // 웹 브라우저에서는 AdMob SDK를 쓸 수 없어 기존 시뮬레이션 방식을 유지.
     if (IS_NATIVE) {
       try {
         await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARD_ID });
-        setShowingAd(true);
         await AdMob.showRewardVideoAd();
         // 실제 보상 지급은 RewardAdPluginEvents.Rewarded 리스너에서 처리됨
       } catch (err) {
-        setShowingAd(false);
         setIsProcessing(false);
         alert(gt.adRewardError(err.message || String(err)));
       }
@@ -522,15 +522,14 @@ export default function GameLobby() {
     let dismissedListener, failedListener;
     const cleanup = () => { dismissedListener?.remove(); failedListener?.remove(); };
 
+    // 💡 실제 광고가 전체화면으로 뜨므로 자체 "광고 재생 중" 안내 화면은 띄우지 않음
     AdMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_ID })
       .then(async () => {
         dismissedListener = await AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => { cleanup(); resolve(); });
         failedListener = await AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, () => { cleanup(); resolve(); });
-        setShowingAd(true);
         await AdMob.showInterstitial();
-        setShowingAd(false);
       })
-      .catch(() => { setShowingAd(false); resolve(); });
+      .catch(() => { resolve(); });
   });
 
   const handleOpenAllWeaponBoxes = async () => {
@@ -790,8 +789,10 @@ export default function GameLobby() {
   );
 
   return (
-    /* 💡 [최종 수정] fixed inset-0을 기반으로 100% 꽉 채우고 스크롤 영역을 내부에 가두는 'Absolute Anchoring' 방식 적용 */
-    <div className="fixed top-0 left-0 right-0 bottom-[65px] bg-black flex justify-center z-40">
+    /* 💡 [최종 수정] fixed inset-0을 기반으로 100% 꽉 채우고 스크롤 영역을 내부에 가두는 'Absolute Anchoring' 방식 적용
+       (하단 65px만큼 여백을 두면 그 자리에 전역 레이아웃의 흰 배경이 비쳐 보이는 문제가 있어,
+       배경 자체는 화면 전체를 덮고 하단 네비게이션만 65px 위로 띄워 광고와 겹치지 않게 함) */
+    <div className="fixed inset-0 bg-black flex justify-center z-40">
       <div className="w-full max-w-md h-full flex flex-col bg-gray-950 text-white font-sans relative overflow-hidden">
         
         {showingAd && (
@@ -1083,7 +1084,7 @@ export default function GameLobby() {
         </main>
 
         {/* 💡 [최종 수정] 하단 네비게이션: absolute를 이용해 화면 맨 아래에 찰싹 붙여 고정! (스크롤 밀림 차단) */}
-        <nav className="absolute bottom-0 left-0 right-0 h-[65px] bg-gray-900 border-t border-gray-800 flex z-50">
+        <nav className="absolute bottom-[65px] left-0 right-0 h-[65px] bg-gray-900 border-t border-gray-800 flex z-50">
           <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>{gt.tabEnhance}</button>
           <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>{gt.tabInventory}</button>
           <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>{gt.tabArena}</button>
