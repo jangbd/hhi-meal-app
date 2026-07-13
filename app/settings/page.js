@@ -123,6 +123,10 @@ export default function Settings() {
               {t.feedback_submit}
             </button>
         </div>
+
+        <Link href="/privacy" className="block text-center text-[12px] text-slate-400 font-bold underline py-2">
+          {isKo ? '개인정보처리방침' : 'Privacy Policy'}
+        </Link>
       </main>
     </div>
   );
