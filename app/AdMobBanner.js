@@ -17,7 +17,7 @@ export default function AdMobBanner() {
     AdMob.initialize({ initializeForTesting: true })
       .then(() => AdMob.showBanner({
         adId: ADMOB_BANNER_ID,
-        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        adSize: BannerAdSize.BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
       }))
       .catch(() => { bannerInitialized = false; });

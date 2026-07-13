@@ -759,6 +759,9 @@ export default function GameLobby() {
 
   if (showIntro) return (
     <div className="fixed inset-0 w-full flex flex-col items-center justify-center bg-gray-950 text-white font-sans overflow-hidden z-50 px-6">
+      <Link href="/" className="absolute top-4 left-4 flex items-center justify-center w-9 h-9 rounded-full bg-gray-800 border border-gray-700 text-gray-300 text-lg active:bg-gray-700" aria-label={gt.backToHome} title={gt.backToHome}>
+        ←
+      </Link>
       <div className="text-center mb-8"><div className="text-7xl mb-4">🗡️</div><h1 className="text-4xl font-black text-yellow-500 mb-2 tracking-wider">{gt.appTitle}</h1></div>
       <div className="w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center shadow-xl">
         <h2 className="text-gray-300 text-xs font-bold mb-3">{gt.nicknamePrompt}</h2>
