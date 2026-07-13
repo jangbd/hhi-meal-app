@@ -56,6 +56,7 @@ export default function BusInfo() {
               <Link href="/bus" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_bus}</Link>
               <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               <Link href="/game" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              <Link href="/notice" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_notice || '📢 공지사항'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_settings}</Link>
             </nav>
           </div>

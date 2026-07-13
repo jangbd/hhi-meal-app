@@ -11,6 +11,7 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState('현장(현대그린푸드)');
   const [lang, setLang] = useState('ko');
+  const [pinnedNotices, setPinnedNotices] = useState([]);
 
   useEffect(() => {
     const savedRes = localStorage.getItem('my_restaurant') || '현장(현대그린푸드)';
@@ -25,6 +26,12 @@ export default function Home() {
       setLoading(false);
     }
     fetchMeals();
+
+    async function fetchPinnedNotices() {
+      const { data } = await supabase.from('notices').select('*').eq('is_pinned', true).order('created_at', { ascending: false });
+      if (data) setPinnedNotices(data);
+    }
+    fetchPinnedNotices();
   }, []);
 
   const t = dict[lang] || dict.ko;
@@ -149,6 +156,7 @@ export default function Home() {
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_bus}</Link>
               <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              <Link href="/notice" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_notice || '📢 공지사항'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_settings}</Link>
             </nav>
           </div>
@@ -156,13 +164,29 @@ export default function Home() {
       )}
 
       <main className="flex-1 max-w-md mx-auto w-full p-4 space-y-4 pb-24">
+        {pinnedNotices.length > 0 && (
+          <Link href="/notice" className="block bg-amber-50 border border-amber-300 rounded-2xl p-3.5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-lg shrink-0">📌</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-black text-amber-900 truncate">{pinnedNotices[0].title}</p>
+                {pinnedNotices.length > 1 && (
+                  <p className="text-[11px] text-amber-700 font-bold mt-0.5">+{pinnedNotices.length - 1}{t.notice_more || '건의 공지사항 더보기'}</p>
+                )}
+              </div>
+              <span className="text-amber-400 text-sm shrink-0">›</span>
+            </div>
+          </Link>
+        )}
         {Object.entries(groupedMeals).map(([date, types]) => (
           <div key={date} className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200">
             <div className="flex flex-col items-center mb-3">
               {date === todayStr && (
                 <span className="bg-indigo-900 text-white text-[11px] font-black px-3 py-1 rounded-full mb-1.5 shadow-md">{t.today}</span>
               )}
-              <h2 className="text-[25px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
+              <h2 className="text-[25px] font-black text-indigo-950 tracking-tight">
+                {date.replace(/-/g, '.')} <span className="text-[16px] text-indigo-400">({(t.days || ['일', '월', '화', '수', '목', '금', '토'])[new Date(date + 'T00:00:00').getDay()]})</span>
+              </h2>
             </div>
 
             {['조식', '중식', '석식', '야식'].map(type => types[type] && (

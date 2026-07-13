@@ -136,6 +136,7 @@ export default function GameLobby() {
   // 💡 강화/창고/투기장/도움말 탭이 스크롤 영역(main)을 공유해서, 한 탭에서
   // 스크롤한 위치가 다른 탭으로 전환해도 그대로 남아있던 문제 수정용 ref
   const mainScrollRef = useRef(null);
+  const pendingAdRewardTypeRef = useRef('dang');
   useEffect(() => {
     if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
   }, [activeTab]);
@@ -316,6 +317,23 @@ export default function GameLobby() {
     }
   }, [loadGameData]);
 
+  // 💡 일일 결투 횟수를 다 쓴 뒤, 광고 시청으로 1회 추가 지급.
+  const grantDuelAdReward = useCallback(async (userId) => {
+    try {
+      const { data: freshProfile } = await supabase.from('game_profiles').select('duel_count').eq('id', userId).maybeSingle();
+      const currentDuelCount = freshProfile?.duel_count || 0;
+      await supabase.from('game_profiles').update({ duel_count: currentDuelCount + 1 }).eq('id', userId).then(checkDB);
+      const curGt = gameDict[getLangSnapshot()] || gameDict.ko;
+      setPopupMsg(curGt.duelAdRewardMsg);
+      await loadGameData(userId);
+    } catch (err) {
+      const curGt = gameDict[getLangSnapshot()] || gameDict.ko;
+      alert(curGt.adRewardError(err.message || String(err)));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [loadGameData]);
+
   useEffect(() => {
     const checkMaintenance = () => setInMaintenance(isMaintenanceWindow());
     checkMaintenance();
@@ -348,7 +366,9 @@ export default function GameLobby() {
 
       rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
         const currentUser = localStorage.getItem('game_guest_uuid');
-        if (currentUser) grantAdReward(currentUser);
+        if (!currentUser) return;
+        if (pendingAdRewardTypeRef.current === 'duel') grantDuelAdReward(currentUser);
+        else grantAdReward(currentUser);
       });
       dismissedListener = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
         setShowingAd(false);
@@ -366,7 +386,7 @@ export default function GameLobby() {
       dismissedListener?.remove();
       failedListener?.remove();
     };
-  }, [inMaintenance, grantAdReward]);
+  }, [inMaintenance, grantAdReward, grantDuelAdReward]);
 
   useEffect(() => {
     if (activeTab === 'arena') {
@@ -411,21 +431,32 @@ export default function GameLobby() {
       try {
         const myPower = Math.floor(myAtk * (0.8 + Math.random() * 0.4));
         const targetPower = Math.floor((target.mainWeapon?.attack || 0) * (0.8 + Math.random() * 0.4));
-        const nextDuelCount = duelCount - 1; 
+        const nextDuelCount = duelCount - 1;
+
+        // 💡 ELO식 포인트 차등 지급: 나보다 포인트 높은 상대를 이기면 더 많이,
+        // 나보다 포인트 낮은 상대를 이기면 더 적게 받음 (지는 경우도 마찬가지로 반대 적용).
+        // 표준 ELO 기대승률 공식 사용, K=40.
+        const K = 40;
+        const myPoints = points || 0;
+        const targetPoints = target.points || 0;
+        const expectedWin = 1 / (1 + Math.pow(10, (myPoints - targetPoints) / 400));
+        const delta = Math.round(K * (myPower >= targetPower ? 1 - expectedWin : 0 - expectedWin));
 
         let resultMsg = '';
         if (myPower >= targetPower) {
-          const newPoints = points + 50;
+          const gained = Math.max(1, delta);
+          const newPoints = myPoints + gained;
           await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount, updated_ts: Date.now() }).eq('id', user).then(checkDB);
-          resultMsg = gt.duelWin(myPower, targetPower, nextDuelCount);
+          resultMsg = gt.duelWin(myPower, targetPower, nextDuelCount, gained);
         } else {
-          const newPoints = Math.max(0, points - 20);
+          const lost = Math.max(1, -delta);
+          const newPoints = Math.max(0, myPoints - lost);
           await supabase.from('game_profiles').update({ points: newPoints, duel_count: nextDuelCount, updated_ts: Date.now() }).eq('id', user).then(checkDB);
-          resultMsg = gt.duelLose(myPower, targetPower, nextDuelCount);
+          resultMsg = gt.duelLose(myPower, targetPower, nextDuelCount, lost);
         }
         setPopupMsg(resultMsg); await loadGameData(user);
       } catch (err) { alert(gt.duelRecordFail(err.message)); } finally { setDuelingTarget(null); setIsProcessing(false); }
-    }, 2000); 
+    }, 2000);
   };
 
   const handleStartNewGame = async () => { 
@@ -473,6 +504,7 @@ export default function GameLobby() {
   const handleWatchAdForDang = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
+    pendingAdRewardTypeRef.current = 'dang';
 
     // 💡 네이티브 앱(Android/iOS)에서는 실제 AdMob 리워드 광고를 시청해야 보상 지급.
     // 실제 광고가 전체화면으로 뜨므로 자체 "광고 재생 중" 안내 화면은 띄우지 않음
@@ -494,6 +526,29 @@ export default function GameLobby() {
     setTimeout(async () => {
       setShowingAd(false);
       await grantAdReward(user);
+    }, 3000);
+  };
+
+  const handleWatchAdForDuel = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    pendingAdRewardTypeRef.current = 'duel';
+
+    if (IS_NATIVE) {
+      try {
+        await AdMob.prepareRewardVideoAd({ adId: ADMOB_REWARD_ID });
+        await AdMob.showRewardVideoAd();
+      } catch (err) {
+        setIsProcessing(false);
+        alert(gt.adRewardError(err.message || String(err)));
+      }
+      return;
+    }
+
+    setShowingAd(true);
+    setTimeout(async () => {
+      setShowingAd(false);
+      await grantDuelAdReward(user);
     }, 3000);
   };
 
@@ -993,7 +1048,12 @@ export default function GameLobby() {
               <div className="sticky top-0 z-20 bg-gray-950 pb-2 flex flex-col gap-2">
                 <div className="flex justify-between items-center bg-gray-900 p-3 rounded-xl border border-gray-800 shrink-0 shadow-md text-[11px] font-bold">
                   <span className="text-gray-400">{gt.dailyDuelCount}</span>
-                  <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>{gt.duelCountDisplay(duelCount)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={duelCount > 0 ? "text-green-400" : "text-red-500"}>{gt.duelCountDisplay(duelCount)}</span>
+                    {duelCount <= 0 && (
+                      <button disabled={isProcessing} onClick={handleWatchAdForDuel} className="bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-black px-2 py-1 rounded shadow-md disabled:opacity-50 animate-pulse transition-all">{gt.watchAdForDuelBtn}</button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-1 bg-gray-900 p-1.5 rounded-xl border border-gray-800 shrink-0 shadow-md">
@@ -1049,6 +1109,11 @@ export default function GameLobby() {
               <div className="bg-gradient-to-r from-cyan-950/40 to-blue-950/40 border border-cyan-500/50 p-2.5 rounded-xl shadow-md shrink-0">
                 <h3 className="font-black text-cyan-400 text-xs flex items-center gap-1">{gt.guideStrategyTitle}</h3>
                 <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">{gt.guideStrategyDesc}</p>
+              </div>
+
+              <div className="bg-gradient-to-r from-orange-950/40 to-amber-950/40 border border-orange-500/50 p-2.5 rounded-xl shadow-md shrink-0">
+                <h3 className="font-black text-orange-400 text-xs flex items-center gap-1">{gt.guideMonthlyResetTitle}</h3>
+                <p className="text-gray-300 mt-1 leading-relaxed text-[10px]">{gt.guideMonthlyResetDesc}</p>
               </div>
 
               <div className="bg-gray-900 border border-gray-800 p-2 rounded-xl shrink-0">
