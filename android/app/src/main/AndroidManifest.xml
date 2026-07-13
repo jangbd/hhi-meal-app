@@ -28,11 +28,9 @@
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- TODO: 실제 배포 전 AdMob 콘솔에서 발급받은 진짜 App ID로 교체할 것.
-             지금은 Google 공식 테스트 App ID (ca-app-pub-3940256099942544~3347511713) 사용 중. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-1252871302557543~7848655680" />
     </application>
 
     <!-- Permissions -->

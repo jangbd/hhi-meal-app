@@ -11,10 +11,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 💡 AdMob 광고 단위 ID. 지금은 Google 공식 테스트 ID이며,
-// 실제 배포 전 AdMob 콘솔에서 발급받은 진짜 ID로 교체해야 함.
-const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712';
-const ADMOB_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
+// 💡 AdMob 광고 단위 ID.
+const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-1252871302557543/1091675641';
+const ADMOB_REWARD_ID = 'ca-app-pub-1252871302557543/4303594127';
+// 💡 실제(운영) 광고 단위 ID를 사용 중이므로, 개발/테스트 기기에서는 반드시 등록해야
+// 실수로 실제 광고를 시청/클릭해 정책 위반이 되는 것을 막을 수 있음.
+const ADMOB_TESTING_DEVICES = [];
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
 // 💡 SSR과 클라이언트 첫 렌더가 항상 'ko'로 일치하도록 하고(하이드레이션 불일치 방지),
@@ -333,7 +335,7 @@ export default function GameLobby() {
     let rewardedListener, dismissedListener, failedListener;
 
     const setupAds = async () => {
-      await AdMob.initialize({ initializeForTesting: true });
+      await AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES });
 
       rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
         const currentUser = localStorage.getItem('game_guest_uuid');

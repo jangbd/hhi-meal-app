@@ -105,7 +105,11 @@
       "Bash(npx patch-package *)",
       "Bash(node scripts/patch-admob-banner.js)",
       "Bash(npm uninstall *)",
-      "Bash(node scripts/patch-admob-banner.mjs)"
+      "Bash(node scripts/patch-admob-banner.mjs)",
+      "Bash(node \"C:\\\\Users\\\\ajrRoql\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--hhi-meal-app\\\\8e8c6f29-206e-4605-9b78-8120cbe6e3ea\\\\scratchpad\\\\check_font.mjs\")",
+      "Bash(git rm *)",
+      "Bash(node \"C:\\\\Users\\\\ajrRoql\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--hhi-meal-app\\\\8e8c6f29-206e-4605-9b78-8120cbe6e3ea\\\\scratchpad\\\\check_web_boxes.mjs\")",
+      "Bash(grep -n \"strong-0 bg-gray-900 border-t\\\\|nav className\\\\|<\\\\/nav>\" e:/hhi-meal-app/app/game/page.js)"
     ]
   }
 }
