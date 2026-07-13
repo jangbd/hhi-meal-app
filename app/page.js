@@ -118,7 +118,7 @@ export default function Home() {
     return parts.map((part, idx) => {
       if (part.startsWith('[') && part.endsWith(']')) {
         return (
-          <span key={idx} className="text-orange-600 text-[18px] font-black inline-block mx-0.5">
+          <span key={idx} className="text-orange-600 text-[20px] font-black inline-block mx-0.5">
             {part}
           </span>
         );
@@ -162,21 +162,21 @@ export default function Home() {
               {date === todayStr && (
                 <span className="bg-indigo-900 text-white text-[11px] font-black px-3 py-1 rounded-full mb-1.5 shadow-md">{t.today}</span>
               )}
-              <h2 className="text-[22px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
+              <h2 className="text-[25px] font-black text-indigo-950 tracking-tight">{date.replace(/-/g, '.')}</h2>
             </div>
 
             {['조식', '중식', '석식', '야식'].map(type => types[type] && (
               <div key={type} className="mt-5 first:mt-1">
                 <div className="flex justify-center items-center gap-1.5 mb-4 bg-slate-50 py-2.5 rounded-xl border border-slate-100">
                   <span className="text-xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
-                  <h3 className="font-black text-indigo-950 text-[19px]">{getMealTranslation(type)}</h3>
+                  <h3 className="font-black text-indigo-950 text-[22px]">{getMealTranslation(type)}</h3>
                 </div>
                 
                 {sortCategories(types[type]).map(m => (
                   <div key={m.id} className="text-center mb-5 last:mb-1">
-                    <p className="text-green-700 font-black text-[20px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
-                    
-                    <div className="text-slate-800 space-y-1 text-[16px] font-bold leading-snug">
+                    <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+
+                    <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
                       {(getMenuByLang(m) || '').split('·').map((item, idx) => (
                         <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
                       ))}
