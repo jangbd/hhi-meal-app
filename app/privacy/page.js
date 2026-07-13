@@ -1,5 +1,5 @@
 export const metadata = {
-  title: '개인정보처리방침 | HHI 식단 앱',
+  title: '개인정보처리방침 | HD현대 식단 앱',
 };
 
 export default function Privacy() {
@@ -10,7 +10,7 @@ export default function Privacy() {
 
       <section className="space-y-6 text-[14px] text-slate-700">
         <p>
-          본 개인정보처리방침은 &quot;HHI 식단 앱&quot;(이하 &quot;본 서비스&quot;)이 수집하는 정보와 그 이용 목적, 제3자 제공 현황을 안내합니다.
+          본 개인정보처리방침은 &quot;HD현대 식단 앱&quot;(이하 &quot;본 서비스&quot;)이 수집하는 정보와 그 이용 목적, 제3자 제공 현황을 안내합니다.
           본 서비스는 별도의 회원가입이나 로그인 없이 이용할 수 있으며, 아래 기능을 이용하는 경우에 한해 최소한의 정보를 수집합니다.
         </p>
 

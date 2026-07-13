@@ -4,7 +4,7 @@ import AdMobBanner from './AdMobBanner';
 import WebAdFooter from './WebAdFooter';
 
 export const metadata = {
-  title: 'HHI 식단 앱',
+  title: 'HD현대 식단 앱',
   description: '현대일렉트릭 임직원 맞춤 서비스',
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
         
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="HHI 식단 앱" />
+        <meta name="apple-mobile-web-app-title" content="HD현대 식단 앱" />
         <meta name="theme-color" content="#1a1a3c" />
 
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
