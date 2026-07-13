@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
         </Script>
 
         {/* 💡 식단/버스 페이지 오류 해결: 강제 높이 제한(h-[100dvh])을 풀고 자연스럽게 스크롤 되도록 복구했습니다! */}
-        <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-[65px]">
+        <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-[95px]">
           {children}
 
           {/* 하단 광고 배너: 네이티브 앱은 AdMob 네이티브 배너, 웹은 기존 AdSense 배너 */}
