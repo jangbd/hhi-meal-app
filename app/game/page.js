@@ -847,7 +847,7 @@ export default function GameLobby() {
         {/* 💡 메인 영역: 스크롤은 여기서만 일어남. 하단 메뉴+광고에 가려지지 않도록 실제 광고 높이(--ad-clearance) 기준 여백 추가 */}
         <main
           className={(activeTab === 'enhance' || activeTab === 'inventory') ? "flex-1 flex flex-col min-h-0 relative z-10 p-2 overflow-y-auto" : "flex-1 overflow-y-auto min-h-0 relative z-10 p-2"}
-          style={{ paddingBottom: 'calc(var(--ad-clearance) + 65px + 20px)' }}
+          style={{ paddingBottom: 'calc(var(--ad-clearance) + 65px)' }}
         >
           {activeTab === 'enhance' && (
             <div className="flex flex-col gap-2 h-full">
@@ -1093,7 +1093,7 @@ export default function GameLobby() {
         </main>
 
         {/* 💡 [최종 수정] 하단 네비게이션: absolute를 이용해 화면 맨 아래에 찰싹 붙여 고정! (스크롤 밀림 차단) */}
-        <nav className="absolute left-0 right-0 h-[65px] bg-gray-900 border-t border-gray-800 flex z-50" style={{ bottom: 'calc(var(--ad-clearance) + 20px)' }}>
+        <nav className="absolute left-0 right-0 h-[65px] bg-gray-900 border-t border-gray-800 flex z-50" style={{ bottom: 'var(--ad-clearance)' }}>
           <button disabled={isProcessing} onClick={() => setActiveTab('enhance')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'enhance' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">⚔️</span>{gt.tabEnhance}</button>
           <button disabled={isProcessing} onClick={() => setActiveTab('inventory')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'inventory' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">📦</span>{gt.tabInventory}</button>
           <button disabled={isProcessing} onClick={() => setActiveTab('arena')} className={`flex-1 flex flex-col items-center justify-center text-[10px] font-black transition-colors disabled:opacity-50 ${activeTab === 'arena' ? 'text-yellow-500' : 'text-gray-500'}`}><span className="text-xl mb-0.5">🏆</span>{gt.tabArena}</button>
