@@ -1,0 +1,36 @@
+workflows:
+  ios-capacitor-build:
+    name: HHI 식단 앱 - iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      xcode: latest
+      cocoapods: default
+      node: latest
+    scripts:
+      - name: Install npm dependencies
+        script: npm install
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App
+          pod install
+      - name: Build (unsigned archive)
+        script: |
+          xcodebuild -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            build
+    artifacts:
+      - build/**/*.app
+    # 💡 실제 기기 설치/TestFlight/App Store 배포를 하려면 Apple Developer Program 가입
+    # 후 Codemagic 콘솔에서 서명 인증서(App Store Connect API 키, provisioning profile)를
+    # 등록하고, 위 스크립트를 -sdk iphonesimulator 대신 -sdk iphoneos + xcodebuild archive
+    # + exportArchive 방식으로 바꿔야 합니다. 인증서/키는 Codemagic 콘솔에서 직접 등록해야
+    # 하며 이 파일만으로는 자동 서명이 되지 않습니다.
