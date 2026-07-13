@@ -17,6 +17,9 @@ const ADMOB_REWARD_ID = 'ca-app-pub-1252871302557543/4303594127';
 // 💡 실제(운영) 광고 단위 ID를 사용 중이므로, 개발/테스트 기기에서는 반드시 등록해야
 // 실수로 실제 광고를 시청/클릭해 정책 위반이 되는 것을 막을 수 있음.
 const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];
+// 💡 유저 수가 적은 초기에는 상자 10개 열기/일괄 판매 시 전면 광고를 건너뛰고
+// 바로 진행되도록 함. 유저가 늘어나면 true로 바꿔서 다시 켤 것.
+const INTERSTITIAL_ADS_ENABLED = false;
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
 // 💡 SSR과 클라이언트 첫 렌더가 항상 'ko'로 일치하도록 하고(하이드레이션 불일치 방지),
@@ -515,6 +518,7 @@ export default function GameLobby() {
   // 네이티브 앱에서는 실제 AdMob 전면 광고를 보여주고, 웹에서는 기존 시뮬레이션(3초 대기)을 유지.
   // 광고 로드/표시에 실패해도 게임 진행 자체가 막히지 않도록 항상 resolve한다.
   const showInterstitialAd = () => new Promise((resolve) => {
+    if (!INTERSTITIAL_ADS_ENABLED) { resolve(); return; }
     if (!IS_NATIVE) {
       setShowingAd(true);
       setTimeout(() => { setShowingAd(false); resolve(); }, 3000);
