@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
@@ -133,6 +133,12 @@ export default function GameLobby() {
   const gt = gameDict[lang] || gameDict.ko;
 
   const [activeTab, setActiveTab] = useState('enhance');
+  // 💡 강화/창고/투기장/도움말 탭이 스크롤 영역(main)을 공유해서, 한 탭에서
+  // 스크롤한 위치가 다른 탭으로 전환해도 그대로 남아있던 문제 수정용 ref
+  const mainScrollRef = useRef(null);
+  useEffect(() => {
+    if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
+  }, [activeTab]);
 
   // --- 유저 및 상태 변수 ---
   const [user, setUser] = useState(null);
@@ -846,6 +852,7 @@ export default function GameLobby() {
 
         {/* 💡 메인 영역: 스크롤은 여기서만 일어남. 하단 메뉴+광고에 가려지지 않도록 실제 광고 높이(--ad-clearance) 기준 여백 추가 */}
         <main
+          ref={mainScrollRef}
           className="flex-1 overflow-y-auto min-h-0 relative z-10 p-2"
           style={{ paddingBottom: 'calc(var(--ad-clearance) + 65px)' }}
         >
