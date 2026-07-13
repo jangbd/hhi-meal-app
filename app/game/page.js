@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
+import { AdMob, RewardAdPluginEvents, InterstitialAdPluginEvents } from '@capacitor-community/admob';
 import { gameDict } from './gameI18n';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -13,6 +13,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 💡 AdMob 광고 단위 ID. 지금은 Google 공식 테스트 ID이며,
 // 실제 배포 전 AdMob 콘솔에서 발급받은 진짜 ID로 교체해야 함.
+const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712';
 const ADMOB_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
@@ -508,38 +509,60 @@ export default function GameLobby() {
     } catch(err) { alert(gt.weaponGachaError(err.message)); setActiveGacha(null); setIsProcessing(false); }
   };
 
+  // 💡 상자 10개 열기 / 일괄 판매처럼 "광고 시청 후 진행" 흐름에서 공용으로 쓰는 헬퍼.
+  // 네이티브 앱에서는 실제 AdMob 전면 광고를 보여주고, 웹에서는 기존 시뮬레이션(3초 대기)을 유지.
+  // 광고 로드/표시에 실패해도 게임 진행 자체가 막히지 않도록 항상 resolve한다.
+  const showInterstitialAd = () => new Promise((resolve) => {
+    if (!IS_NATIVE) {
+      setShowingAd(true);
+      setTimeout(() => { setShowingAd(false); resolve(); }, 3000);
+      return;
+    }
+
+    let dismissedListener, failedListener;
+    const cleanup = () => { dismissedListener?.remove(); failedListener?.remove(); };
+
+    AdMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_ID })
+      .then(async () => {
+        dismissedListener = await AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => { cleanup(); resolve(); });
+        failedListener = await AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, () => { cleanup(); resolve(); });
+        setShowingAd(true);
+        await AdMob.showInterstitial();
+        setShowingAd(false);
+      })
+      .catch(() => { setShowingAd(false); resolve(); });
+  });
+
   const handleOpenAllWeaponBoxes = async () => {
     if (isProcessing) return;
     if (weaponBoxes <= 0) return alert(gt.noWeaponBoxes);
     const availableSlots = 20 - inventory.length;
     if (availableSlots <= 0) return alert(gt.bagFullShort);
 
-    setIsProcessing(true); setShowingAd(true);
+    setIsProcessing(true);
+    await showInterstitialAd();
+    setActiveGacha('weapon');
+    try {
+      const openCount = Math.min(weaponBoxes, availableSlots, 10);
+      const newWeapons = [];
+      const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
 
-    setTimeout(async () => {
-      setShowingAd(false); setActiveGacha('weapon');
-      try {
-        const openCount = Math.min(weaponBoxes, availableSlots, 10);
-        const newWeapons = [];
-        const resultCounts = { normal: 0, magic: 0, rare: 0, epic: 0, legendary: 0 };
+      for (let i = 0; i < openCount; i++) {
+        const rand = Math.random() * 100; let newGrade = 'normal';
+        if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
+        resultCounts[newGrade]++;
+        const config = WEAPON_CONFIG[newGrade];
+        const newName = gt.weaponNames[newGrade];
+        newWeapons.push({ id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: config.baseAtk, protect_count: config.protect });
+      }
+      await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - openCount }).eq('id', user).then(checkDB);
+      await supabase.from('weapons').insert(newWeapons).then(checkDB);
 
-        for (let i = 0; i < openCount; i++) {
-          const rand = Math.random() * 100; let newGrade = 'normal';
-          if (rand <= 0.1) newGrade = 'legendary'; else if (rand <= 1.1) newGrade = 'epic'; else if (rand <= 6.1) newGrade = 'rare'; else if (rand <= 21.1) newGrade = 'magic';
-          resultCounts[newGrade]++;
-          const config = WEAPON_CONFIG[newGrade];
-          const newName = gt.weaponNames[newGrade];
-          newWeapons.push({ id: generateUUID(), user_id: user, slot_type: 'inventory', weapon_grade: newGrade, enhancement_level: 0, name: newName, attack: config.baseAtk, protect_count: config.protect });
-        }
-        await supabase.from('game_profiles').update({ weapon_boxes: weaponBoxes - openCount }).eq('id', user).then(checkDB);
-        await supabase.from('weapons').insert(newWeapons).then(checkDB);
-
-        setTimeout(async () => {
-          setPopupMsg(gt.allBoxesOpenResult(openCount, resultCounts, gt.gradeLabels));
-          setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
-        }, 1000);
-      } catch (err) { alert(gt.allWeaponOpenError(err.message)); setActiveGacha(null); setIsProcessing(false); }
-    }, 3000);
+      setTimeout(async () => {
+        setPopupMsg(gt.allBoxesOpenResult(openCount, resultCounts, gt.gradeLabels));
+        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+      }, 1000);
+    } catch (err) { alert(gt.allWeaponOpenError(err.message)); setActiveGacha(null); setIsProcessing(false); }
   };
 
   const handleOpenScrollBox = async () => {
@@ -559,24 +582,22 @@ export default function GameLobby() {
   const handleOpenAllScrollBoxes = async () => {
     if (isProcessing) return;
     if (scrollBoxes <= 0) return alert(gt.noScrollBoxes);
-    setIsProcessing(true); setShowingAd(true);
-
-    setTimeout(async () => {
-      setShowingAd(false); setActiveGacha('scroll');
-      try {
-        const openCount = Math.min(scrollBoxes, 10);
-        let addedNormal = 0, addedBlessed = 0, addedProtect = 0;
-        for (let i = 0; i < openCount; i++) {
-          const rand = Math.random() * 100;
-          if (rand <= 10) addedProtect++; else if (rand <= 30) addedBlessed++; else addedNormal++;
-        }
-        await supabase.from('game_profiles').update({ scroll_boxes: scrollBoxes - openCount, protect_scrolls: protectScrolls + addedProtect, blessed_scrolls: blessedScrolls + addedBlessed, normal_scrolls: normalScrolls + addedNormal }).eq('id', user).then(checkDB);
-        setTimeout(async () => {
-          setPopupMsg(gt.allScrollOpenResult(openCount, addedProtect, addedBlessed, addedNormal));
-          setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
-        }, 800);
-      } catch (err) { alert(gt.genericError(err.message)); setActiveGacha(null); setIsProcessing(false); }
-    }, 3000);
+    setIsProcessing(true);
+    await showInterstitialAd();
+    setActiveGacha('scroll');
+    try {
+      const openCount = Math.min(scrollBoxes, 10);
+      let addedNormal = 0, addedBlessed = 0, addedProtect = 0;
+      for (let i = 0; i < openCount; i++) {
+        const rand = Math.random() * 100;
+        if (rand <= 10) addedProtect++; else if (rand <= 30) addedBlessed++; else addedNormal++;
+      }
+      await supabase.from('game_profiles').update({ scroll_boxes: scrollBoxes - openCount, protect_scrolls: protectScrolls + addedProtect, blessed_scrolls: blessedScrolls + addedBlessed, normal_scrolls: normalScrolls + addedNormal }).eq('id', user).then(checkDB);
+      setTimeout(async () => {
+        setPopupMsg(gt.allScrollOpenResult(openCount, addedProtect, addedBlessed, addedNormal));
+        setActiveGacha(null); await loadGameData(user); setIsProcessing(false);
+      }, 800);
+    } catch (err) { alert(gt.genericError(err.message)); setActiveGacha(null); setIsProcessing(false); }
   };
 
   const handleEquip = async (targetSlot) => { 
@@ -610,19 +631,16 @@ export default function GameLobby() {
     const itemsToSell = inventory.filter(w => targetGrades.includes(w.weapon_grade));
     if (itemsToSell.length === 0) return alert(gt.noSellableItems);
 
-    setIsProcessing(true); setIsMultiSellModalOpen(false); setShowingAd(true);
-
-    setTimeout(async () => {
-      setShowingAd(false);
-      try {
-        let totalGain = 0; const idsToDelete = itemsToSell.map(w => w.id);
-        itemsToSell.forEach(item => { totalGain += calculateSellPrice(item.weapon_grade, item.enhancement_level); });
-        await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
-        await supabase.from('game_profiles').update({ dang: dang + totalGain }).eq('id', user).then(checkDB);
-        setPopupMsg(gt.multiSellComplete(itemsToSell.length, totalGain));
-        await loadGameData(user);
-      } catch (err) { alert(gt.genericError(err.message)); } finally { setIsProcessing(false); }
-    }, 3000);
+    setIsProcessing(true); setIsMultiSellModalOpen(false);
+    await showInterstitialAd();
+    try {
+      let totalGain = 0; const idsToDelete = itemsToSell.map(w => w.id);
+      itemsToSell.forEach(item => { totalGain += calculateSellPrice(item.weapon_grade, item.enhancement_level); });
+      await supabase.from('weapons').delete().in('id', idsToDelete).then(checkDB);
+      await supabase.from('game_profiles').update({ dang: dang + totalGain }).eq('id', user).then(checkDB);
+      setPopupMsg(gt.multiSellComplete(itemsToSell.length, totalGain));
+      await loadGameData(user);
+    } catch (err) { alert(gt.genericError(err.message)); } finally { setIsProcessing(false); }
   };
 
   const handleSwap = async () => {

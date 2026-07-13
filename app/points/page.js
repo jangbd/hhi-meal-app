@@ -455,7 +455,7 @@ export default function MatchingHub() {
                   <span>동명이인이 있을 경우 체크해 주세요</span>
                 </label>
                 {regForm.hasDuplicate && (
-                  <input placeholder="소속 반이나 상세 직책을 입력하세요" value={regForm.positionDetail} onChange={(e)=>setRegForm({...regForm, positionDetail: e.target.value})} className="w-full p-2.5 bg-white rounded-lg border border-indigo-200 font-bold text-[13px]" />
+                  <input placeholder="소속 과나 팀을 입력하세요" value={regForm.positionDetail} onChange={(e)=>setRegForm({...regForm, positionDetail: e.target.value})} className="w-full p-2.5 bg-white rounded-lg border border-indigo-200 font-bold text-[13px]" />
                 )}
               </div>
 
