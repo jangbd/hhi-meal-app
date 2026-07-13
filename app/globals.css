@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+:root {
+  /* 💡 하단 광고(웹 AdSense/네이티브 AdMob) 여백 기본값.
+     네이티브 앱에서는 실제 배너 로드 크기에 맞춰 app/AdMobBanner.js가 이 값을 갱신함. */
+  --ad-clearance: 65px;
+}
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 antialiased;

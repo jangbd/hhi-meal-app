@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
+import { AdMob, BannerAdPosition, BannerAdSize, BannerAdPluginEvents } from '@capacitor-community/admob';
 
 // 💡 앱 전체(식단/버스/매칭소/게임 등 모든 페이지)에서 공통으로 뜨는 배너 광고.
 // 네이티브 앱(Android/iOS)에서만 동작하며, 웹 브라우저에서는 기존 AdSense 배너를 그대로 사용.
@@ -16,6 +16,15 @@ export default function AdMobBanner() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || bannerInitialized) return;
     bannerInitialized = true;
+
+    // 💡 배너 실제 렌더링 높이는 기기/화면폭/광고 크리에이티브에 따라 달라지므로
+    // 하드코딩 대신 실제 로드된 크기를 감지해 CSS 변수로 전체 앱에 전파한다.
+    // (레이아웃/게임 페이지의 하단 여백은 이 변수를 참조해 자동으로 맞춰짐)
+    AdMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => {
+      if (info?.height > 0) {
+        document.documentElement.style.setProperty('--ad-clearance', `${info.height}px`);
+      }
+    }).catch(() => {});
 
     AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES })
       .then(() => AdMob.showBanner({
