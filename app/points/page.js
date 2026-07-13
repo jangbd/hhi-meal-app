@@ -2,9 +2,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabaseClient';
-import { dict } from '../i18n'; 
+import { dict } from '../i18n';
+import { Capacitor } from '@capacitor/core';
+import { AdMob, InterstitialAdPluginEvents } from '@capacitor-community/admob';
 
-const FLEX_LIMIT = 2; 
+const FLEX_LIMIT = 2;
+const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-1252871302557543/1091675641';
+const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];
 
 // ⏳ 24시간 실시간 카운트다운 컴포넌트
 const CountdownTimer = ({ sentAt }) => {
@@ -93,10 +98,31 @@ export default function MatchingHub() {
   // 💡 경고 2회 이상이면 차단 상태
   const isBanned = myProfile && myProfile.warning_count >= 2; 
 
+  // 💡 네이티브 앱에서는 실제 AdMob 전면 광고를 보여주고, 웹에서는 기존 시뮬레이션(1.5초 대기)을 유지.
+  // 광고 로드/표시에 실패해도 매칭 진행 자체가 막히지 않도록 항상 resolve한다.
+  const showInterstitialAd = () => new Promise((resolve) => {
+    if (!IS_NATIVE) {
+      setIsAdPlaying(true);
+      setTimeout(() => { setIsAdPlaying(false); resolve(); }, 1500);
+      return;
+    }
+
+    let dismissedListener, failedListener;
+    const cleanup = () => { dismissedListener?.remove(); failedListener?.remove(); };
+
+    // 💡 실제 광고가 전체화면으로 뜨므로 자체 "광고 로딩 중" 안내 화면은 띄우지 않음
+    AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES })
+      .then(() => AdMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_ID }))
+      .then(async () => {
+        dismissedListener = await AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => { cleanup(); resolve(); });
+        failedListener = await AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, () => { cleanup(); resolve(); });
+        await AdMob.showInterstitial();
+      })
+      .catch(() => { resolve(); });
+  });
+
   const runWithAd = async (actionCallback) => {
-    setIsAdPlaying(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsAdPlaying(false);
+    await showInterstitialAd();
     await actionCallback();
   };
 
