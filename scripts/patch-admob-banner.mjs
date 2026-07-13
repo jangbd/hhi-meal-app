@@ -52,5 +52,18 @@ content = content.replace(
   'mAdViewLayout.setVerticalGravity(Gravity.BOTTOM);\n            mAdViewLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT);'
 );
 
+// 💡 웹 콘텐츠가 max-w-md(448px)로 제한되어 있는데, 매우 넓은 화면(태블릿/울트라폰)에서는
+// 화면 전체 폭 기준으로 계산하면 배너 높이가 콘텐츠 폭 대비 과도하게 커져
+// 아래쪽에 빈 흰 여백이 생기는 문제가 있어 요청 폭을 448dp로 제한한다.
+content = content.replace(
+  'AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(contextSupplier.get(), (int) (defaultWidthPixels / density))',
+  [
+    'AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(',
+    '                        contextSupplier.get(),',
+    '                        Math.min((int) (defaultWidthPixels / density), 448)',
+    '                    )',
+  ].join('\n')
+);
+
 fs.writeFileSync(targetPath, content, 'utf8');
 console.log('[patch-admob-banner] patched BannerExecutor.java');
