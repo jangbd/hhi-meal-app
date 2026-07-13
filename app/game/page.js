@@ -16,7 +16,7 @@ const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-1252871302557543/1091675641';
 const ADMOB_REWARD_ID = 'ca-app-pub-1252871302557543/4303594127';
 // 💡 실제(운영) 광고 단위 ID를 사용 중이므로, 개발/테스트 기기에서는 반드시 등록해야
 // 실수로 실제 광고를 시청/클릭해 정책 위반이 되는 것을 막을 수 있음.
-const ADMOB_TESTING_DEVICES = [];
+const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
 // 💡 SSR과 클라이언트 첫 렌더가 항상 'ko'로 일치하도록 하고(하이드레이션 불일치 방지),
