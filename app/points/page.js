@@ -389,14 +389,6 @@ export default function MatchingHub() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 items-start bg-blue-50/50 p-3.5 rounded-2xl border border-blue-100">
-                  <span className="text-xl mt-0.5">🤝</span>
-                  <div>
-                    <p className="text-[13.5px] font-black text-blue-900 mb-0.5">공정한 랜덤 매칭</p>
-                    <p className="text-[11.5px] text-slate-600 font-bold leading-relaxed break-keep">동일 계열사 내 동일 부서 사내 몰아주기 방지를 위해 같은 소속의 동료와는 매칭되지 않습니다.</p>
-                  </div>
-                </div>
-
                 <div className="flex gap-3 items-start bg-red-50/50 p-3.5 rounded-2xl border border-red-100">
                   <span className="text-xl mt-0.5">🛡️</span>
                   <div>
@@ -455,7 +447,7 @@ export default function MatchingHub() {
                   <span>동명이인이 있을 경우 체크해 주세요</span>
                 </label>
                 {regForm.hasDuplicate && (
-                  <input placeholder="소속 과나 팀을 입력하세요" value={regForm.positionDetail} onChange={(e)=>setRegForm({...regForm, positionDetail: e.target.value})} className="w-full p-2.5 bg-white rounded-lg border border-indigo-200 font-bold text-[13px]" />
+                  <input placeholder="소속되어 있는 과 또는 팀을 입력하세요" value={regForm.positionDetail} onChange={(e)=>setRegForm({...regForm, positionDetail: e.target.value})} className="w-full p-2.5 bg-white rounded-lg border border-indigo-200 font-bold text-[13px]" />
                 )}
               </div>
 

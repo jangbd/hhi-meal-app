@@ -914,7 +914,7 @@ export default function GameLobby() {
           )}
 
           {activeTab === 'inventory' && (
-            <div className="min-h-full flex flex-col gap-2">
+            <div className="flex flex-col gap-2 pb-2">
               <div className="shrink-0">
                 <div className="flex justify-between items-center mb-1 px-2">
                     <h2 className="text-[11px] font-bold text-yellow-400">{gt.inventoryTitle(inventory.length)}</h2>
