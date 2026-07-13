@@ -1,5 +1,7 @@
 import './globals.css';
 import Script from 'next/script';
+import AdMobBanner from './AdMobBanner';
+import WebAdFooter from './WebAdFooter';
 
 export const metadata = {
   title: 'HHI 식단 앱',
@@ -53,17 +55,10 @@ export default function RootLayout({ children }) {
         <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-[65px]">
           
           {children}
-          
-          {/* 하단 광고 배너 (화면 맨 밑에 무조건 고정) */}
-          <footer className="fixed bottom-0 w-full max-w-md mx-auto h-[65px] bg-white border-t border-slate-200 z-[100] flex items-center justify-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] overflow-hidden">
-            <ins className="adsbygoogle"
-                 style={{ display: 'inline-block', width: '320px', height: '50px' }}
-                 data-ad-client="ca-pub-1252871302557543"
-                 data-ad-slot="6653115780"></ins>
-            <Script id="adsbygoogle-init" strategy="afterInteractive">
-              {`try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}`}
-            </Script>
-          </footer>
+
+          {/* 하단 광고 배너: 네이티브 앱은 AdMob 네이티브 배너, 웹은 기존 AdSense 배너 */}
+          <AdMobBanner />
+          <WebAdFooter />
         </div>
       </body>
     </html>

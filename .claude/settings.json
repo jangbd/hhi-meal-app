@@ -99,7 +99,9 @@
       "Bash(awk '{print $4}')",
       "Bash(grep -i \"\\\\.so$\\\\|^.*lib/\")",
       "Bash(\"C:\\\\Program Files\\\\Microsoft\\\\jdk-21.0.11.10-hotspot\\\\bin\\\\keytool.exe\" -genkeypair -v -keystore hhimeal-release.keystore -alias hhimeal -keyalg RSA -keysize 2048 -validity 10000 -storepass hhimeal2026 -keypass hhimeal2026 -dname \"CN=HHI Meal App, OU=HD Hyundai, O=HD Hyundai, L=Ulsan, ST=Ulsan, C=KR\")",
-      "Bash(unzip -p android/app/build/outputs/apk/debug/app-debug.apk classes.dex)"
+      "Bash(unzip -p android/app/build/outputs/apk/debug/app-debug.apk classes.dex)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(node \"C:\\\\Users\\\\ajrRoql\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--hhi-meal-app\\\\8e8c6f29-206e-4605-9b78-8120cbe6e3ea\\\\scratchpad\\\\check_web_footer.mjs\")"
     ]
   }
 }

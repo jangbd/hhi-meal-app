@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
-import { AdMob, BannerAdPosition, BannerAdSize, RewardAdPluginEvents } from '@capacitor-community/admob';
+import { AdMob, RewardAdPluginEvents } from '@capacitor-community/admob';
 import { gameDict } from './gameI18n';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -13,7 +13,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 💡 AdMob 광고 단위 ID. 지금은 Google 공식 테스트 ID이며,
 // 실제 배포 전 AdMob 콘솔에서 발급받은 진짜 ID로 교체해야 함.
-const ADMOB_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
 const ADMOB_REWARD_ID = 'ca-app-pub-3940256099942544/5224354917';
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
 
@@ -326,18 +325,14 @@ export default function GameLobby() {
     initApp();
   }, [loadGameData, inMaintenance]);
 
-  // 💡 AdMob 초기화 + 배너/리워드 광고 설정 (네이티브 앱에서만 동작)
+  // 💡 AdMob 리워드 광고 리스너 설정 (네이티브 앱에서만 동작).
+  // 배너 광고 자체는 app/AdMobBanner.js에서 앱 전체 공통으로 처리.
   useEffect(() => {
     if (!IS_NATIVE || inMaintenance) return;
     let rewardedListener, dismissedListener, failedListener;
 
     const setupAds = async () => {
       await AdMob.initialize({ initializeForTesting: true });
-      await AdMob.showBanner({
-        adId: ADMOB_BANNER_ID,
-        adSize: BannerAdSize.ADAPTIVE_BANNER,
-        position: BannerAdPosition.BOTTOM_CENTER,
-      });
 
       rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
         const currentUser = localStorage.getItem('game_guest_uuid');
@@ -358,7 +353,6 @@ export default function GameLobby() {
       rewardedListener?.remove();
       dismissedListener?.remove();
       failedListener?.remove();
-      AdMob.removeBanner().catch(() => {});
     };
   }, [inMaintenance, grantAdReward]);
 
