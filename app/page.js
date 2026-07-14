@@ -32,11 +32,13 @@ export default function Home() {
       const { data } = await supabase.from('meals').select('*').order('meal_date', { ascending: true });
       if (data) {
         setMeals(data);
-        // 💡 캐시는 7일치만 유지 (오늘 기준 -1일 이전 데이터는 정리)
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 1);
-        const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
-        const pruned = data.filter(m => m.meal_date >= cutoffStr).slice(0, 7 * 4);
+        // 💡 캐시는 오늘부터 7일치만 유지 (과거 데이터/8일 이후 데이터는 정리)
+        const toDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const startStr = toDateStr(new Date());
+        const end = new Date();
+        end.setDate(end.getDate() + 6);
+        const endStr = toDateStr(end);
+        const pruned = data.filter(m => m.meal_date >= startStr && m.meal_date <= endStr);
         try { localStorage.setItem('cached_meals', JSON.stringify(pruned)); } catch { /* 저장 공간 부족 등은 무시 */ }
       }
       setLoading(false);
