@@ -586,8 +586,8 @@ export default function MatchingHub() {
             {/* 🔍 매칭 대기 중 */}
             {!isEditing && myProfile.match_status === 'idle' && (
               <div className="mb-6 space-y-4">
-                <button 
-                  onClick={() => runWithAd(_findMatch)} 
+                <button
+                  onClick={_findMatch}
                   disabled={isSyncing || isAdPlaying}
                   className="w-full py-6 rounded-2xl font-black text-[18px] shadow-xl transition-all bg-[#1a1a3c] text-white hover:bg-indigo-900 active:scale-95 flex flex-col items-center gap-1"
                 >
