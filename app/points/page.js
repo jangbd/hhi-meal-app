@@ -135,10 +135,25 @@ export default function MatchingHub() {
     if (regForm.hasDuplicate && !regForm.positionDetail.trim()) {
       return alert('상세 위치 정보를 입력해 주세요!');
     }
-    
+
     setIsSyncing(true);
+
+    // 💡 앱 데이터 삭제 후 재등록으로 정지(경고 2회 이상)를 우회하는 것을 막기 위해,
+    // 이름+회사+부서가 일치하는 정지된 프로필이 있는지 먼저 확인한다.
+    const { data: bannedMatch } = await supabase.from('profiles')
+      .select('id')
+      .eq('name', regForm.name.trim())
+      .eq('company', finalCompany)
+      .eq('department', regForm.department.replace(/\s+/g, ''))
+      .gte('warning_count', 2)
+      .maybeSingle();
+    if (bannedMatch) {
+      setIsSyncing(false);
+      return alert('경고 누적으로 이용이 제한된 계정입니다. 문의사항은 설정 페이지의 건의사항으로 남겨주세요.');
+    }
+
     const newUserId = crypto.randomUUID();
-    
+
     const newProfile = {
       id: newUserId,
       name: regForm.name.trim(),
