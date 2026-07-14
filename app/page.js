@@ -21,9 +21,24 @@ export default function Home() {
     const savedLang = localStorage.getItem('my_language') || 'ko';
     setLang(savedLang);
 
+    // 💡 첫 화면에서 흰 화면이 잠깐 보이는 걸 줄이기 위해, 네트워크 응답 전에
+    // 로컬에 캐시된 최근 식단을 먼저 보여주고 최신 데이터로 교체한다.
+    try {
+      const cached = JSON.parse(localStorage.getItem('cached_meals') || '[]');
+      if (cached.length > 0) setMeals(cached);
+    } catch { /* 캐시 파싱 실패는 무시하고 네트워크 응답만 사용 */ }
+
     async function fetchMeals() {
       const { data } = await supabase.from('meals').select('*').order('meal_date', { ascending: true });
-      if (data) setMeals(data);
+      if (data) {
+        setMeals(data);
+        // 💡 캐시는 7일치만 유지 (오늘 기준 -1일 이전 데이터는 정리)
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 1);
+        const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
+        const pruned = data.filter(m => m.meal_date >= cutoffStr).slice(0, 7 * 4);
+        try { localStorage.setItem('cached_meals', JSON.stringify(pruned)); } catch { /* 저장 공간 부족 등은 무시 */ }
+      }
       setLoading(false);
     }
     fetchMeals();
