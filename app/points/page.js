@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { dict } from '../i18n';
 import { Capacitor } from '@capacitor/core';
 import { AdMob, InterstitialAdPluginEvents } from '@capacitor-community/admob';
+import { MATCHING_ENABLED } from '../featureFlags';
 
 const FLEX_LIMIT = 2;
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
@@ -355,6 +356,15 @@ export default function MatchingHub() {
   };
 
   const handleRefreshStatus = () => { if (myProfile) fetchMyProfile(myProfile.id); };
+
+  if (!MATCHING_ENABLED) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 font-sans text-center p-6">
+        <p className="text-slate-500 font-bold">현재 이 기능은 준비 중입니다.</p>
+        <Link href="/" className="text-indigo-600 font-black underline">홈으로 돌아가기</Link>
+      </div>
+    );
+  }
 
   if (isChecking) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">시스템 확인 중...</div>;
 
