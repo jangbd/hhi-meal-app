@@ -11,9 +11,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 💡 AdMob 광고 단위 ID.
-const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-1252871302557543/1091675641';
-const ADMOB_REWARD_ID = 'ca-app-pub-1252871302557543/4303594127';
+// 💡 AdMob 광고 단위 ID (플랫폼별로 다른 ID 사용).
+const ADMOB_INTERSTITIAL_ID = Capacitor.getPlatform() === 'ios'
+  ? 'ca-app-pub-1252871302557543/8934078041'
+  : 'ca-app-pub-1252871302557543/1091675641';
+const ADMOB_REWARD_ID = Capacitor.getPlatform() === 'ios'
+  ? 'ca-app-pub-1252871302557543/2669454967'
+  : 'ca-app-pub-1252871302557543/4303594127';
 // 💡 실제(운영) 광고 단위 ID를 사용 중이므로, 개발/테스트 기기에서는 반드시 등록해야
 // 실수로 실제 광고를 시청/클릭해 정책 위반이 되는 것을 막을 수 있음.
 const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];

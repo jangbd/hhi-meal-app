@@ -9,7 +9,9 @@ import { MATCHING_ENABLED } from '../featureFlags';
 
 const FLEX_LIMIT = 2;
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
-const ADMOB_INTERSTITIAL_ID = 'ca-app-pub-1252871302557543/1091675641';
+const ADMOB_INTERSTITIAL_ID = Capacitor.getPlatform() === 'ios'
+  ? 'ca-app-pub-1252871302557543/8934078041'
+  : 'ca-app-pub-1252871302557543/1091675641';
 const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];
 
 // ⏳ 24시간 실시간 카운트다운 컴포넌트
