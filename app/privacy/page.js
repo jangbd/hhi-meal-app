@@ -66,15 +66,23 @@ export default function Privacy() {
         </div>
 
         <div>
-          <h2 className="font-black text-indigo-900 mb-2">6. 문의처</h2>
+          <h2 className="font-black text-indigo-900 mb-2">6. 포인트 매칭소 이용에 관한 책임의 한계</h2>
           <p>
-            개인정보 관련 문의나 삭제 요청은 아래 이메일로 연락해 주세요.<br />
-            이메일: <span className="font-bold">[여기에 문의용 이메일 주소를 입력해 주세요]</span>
+            포인트 매칭소는 HD현대 직영 임직원을 대상으로 하는 서비스이며, 이용자 간 포인트 매칭을 위한 도구를 제공할 뿐, 매칭 상대의 선정, 포인트 발송 및 수신 여부에 관한 판단과 결정은 전적으로 이용자 본인의 책임 하에 이루어집니다.
+            운영자는 이용자 간 발생하는 분쟁, 허위 신고, 미수신 등으로 인한 손해에 대해 어떠한 책임도 지지 않으며, 다만 서비스의 안정적 운영과 부정 이용 방지를 위해 합리적인 범위 내에서 노력합니다.
           </p>
         </div>
 
         <div>
-          <h2 className="font-black text-indigo-900 mb-2">7. 방침 변경</h2>
+          <h2 className="font-black text-indigo-900 mb-2">7. 문의처</h2>
+          <p>
+            개인정보 관련 문의나 삭제 요청은 아래 이메일로 연락해 주세요.<br />
+            이메일: <span className="font-bold">emesis2026@gmail.com</span>
+          </p>
+        </div>
+
+        <div>
+          <h2 className="font-black text-indigo-900 mb-2">8. 방침 변경</h2>
           <p>본 방침은 관련 법령이나 서비스 변경에 따라 수정될 수 있으며, 변경 시 본 페이지를 통해 공지합니다.</p>
         </div>
       </section>

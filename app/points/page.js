@@ -425,13 +425,19 @@ export default function MatchingHub() {
       <main className="flex-1 p-4 pb-20">
         {!myProfile ? (
           <div className="space-y-5 my-auto animate-in fade-in duration-300 py-4">
-            
+
+            {/* 대상 안내 배너 */}
+            <div className="bg-[#1a1a3c] text-white rounded-2xl p-4 text-center shadow-md">
+              <p className="text-[13.5px] font-black leading-relaxed">🏭 본 서비스는 HD현대 직영 임직원을 대상으로 합니다</p>
+              <p className="text-[11px] text-indigo-200 font-bold mt-1">협력사 소속 등 직영 외 인원은 이용 대상이 아닙니다.</p>
+            </div>
+
             {/* 온보딩 가이드 */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="text-center mb-2">
                 <span className="text-4xl">✨</span>
                 <h2 className="text-[18px] font-black text-[#1a1a3c] mt-2">HD핵심가치 포인트 매칭소란?</h2>
-                <p className="text-[12px] text-slate-500 font-bold mt-1">정직원이 전송가능한 HD핵심가치 포인트 매칭 플랫폼</p>
+                <p className="text-[12px] text-slate-500 font-bold mt-1">HD현대 직영 정직원이 전송가능한 HD핵심가치 포인트 매칭 플랫폼</p>
               </div>
               
               <div className="space-y-3 pt-2">
@@ -505,7 +511,11 @@ export default function MatchingHub() {
                 )}
               </div>
 
-              <button onClick={handleSaveProfile} disabled={isSyncing} className="w-full mt-4 py-4 bg-[#1a1a3c] text-white font-black rounded-xl text-[16px] shadow-lg hover:bg-indigo-900 transition-all">
+              <p className="text-[10.5px] text-slate-400 font-bold leading-relaxed break-keep px-1">
+                ※ 본 매칭소는 동료 간 포인트 매칭을 위한 도구를 제공할 뿐이며, 매칭 상대 선정 및 포인트 발송/수신 여부는 전적으로 이용자 본인의 판단과 책임 하에 이루어집니다. 운영자는 이용자 간 발생하는 분쟁에 대해 책임을 지지 않습니다.
+              </p>
+
+              <button onClick={handleSaveProfile} disabled={isSyncing} className="w-full mt-2 py-4 bg-[#1a1a3c] text-white font-black rounded-xl text-[16px] shadow-lg hover:bg-indigo-900 transition-all">
                 {isSyncing ? '서버 저장 중...' : '동의하고 매칭소 시작하기'}
               </button>
             </div>
