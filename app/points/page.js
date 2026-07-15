@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { dict } from '../i18n';
 import { Capacitor } from '@capacitor/core';
 import { AdMob, InterstitialAdPluginEvents } from '@capacitor-community/admob';
-import { MATCHING_ENABLED } from '../featureFlags';
+import { MATCHING_ENABLED, GAME_ENABLED } from '../featureFlags';
 
 const FLEX_LIMIT = 2;
 const IS_NATIVE = typeof window !== 'undefined' && Capacitor.isNativePlatform();
@@ -413,7 +413,9 @@ export default function MatchingHub() {
               <Link href="/" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_meal || '🍱 식단'}</Link>
               <Link href="/bus" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_bus || '🚌 버스 시간표'}</Link>
               <Link href="/points" className="block py-3.5 px-4 bg-indigo-50 text-indigo-800 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
-              <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              {GAME_ENABLED && (
+                <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              )}
               <Link href="/notice" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_notice || '📢 공지사항'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_settings || '⚙️ 설정'}</Link>
             </nav>

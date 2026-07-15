@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { AdMob, RewardAdPluginEvents, InterstitialAdPluginEvents } from '@capacitor-community/admob';
 import { gameDict } from './gameI18n';
+import { GAME_ENABLED } from '../featureFlags';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
@@ -842,6 +843,15 @@ export default function GameLobby() {
       <Link href="/" className="mt-8 text-xs text-gray-500 underline">{gt.backToHome}</Link>
     </div>
   );
+
+  if (!GAME_ENABLED) {
+    return (
+      <div className="h-screen bg-gray-950 flex flex-col items-center justify-center gap-3 text-center p-6">
+        <p className="text-gray-400 font-bold">현재 이 기능은 준비 중입니다.</p>
+        <Link href="/" className="text-yellow-500 font-black underline">홈으로 돌아가기</Link>
+      </div>
+    );
+  }
 
   if (loading) return <div className="h-screen bg-gray-950 flex flex-col justify-center items-center text-white p-6 font-bold">{gt.serverConnecting}</div>;
 

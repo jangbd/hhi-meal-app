@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { dict } from '../i18n';
 import { supabase } from '../../lib/supabaseClient';
-import { MATCHING_ENABLED } from '../featureFlags';
+import { MATCHING_ENABLED, GAME_ENABLED } from '../featureFlags';
 
 export default function Settings() {
   const [selectedRestaurant, setSelectedRestaurant] = useState('현장(현대그린푸드)');
@@ -75,7 +75,9 @@ export default function Settings() {
               {MATCHING_ENABLED && (
                 <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_points}</Link>
               )}
-              <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              {GAME_ENABLED && (
+                <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              )}
               <Link href="/notice" className="block py-3.5 px-4 text-slate-600 font-bold">{t.menu_notice || '📢 공지사항'}</Link>
             </nav>
           </div>

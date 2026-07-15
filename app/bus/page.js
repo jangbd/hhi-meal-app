@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdBanner from '../AdBanner';
 import { dict } from '../i18n';
-import { MATCHING_ENABLED } from '../featureFlags';
+import { MATCHING_ENABLED, GAME_ENABLED } from '../featureFlags';
 
 const busDict = {
   ko: { title: "버스 시간표", inhouse: "사내 버스", ocean: "해양 버스", commute: "통근 버스", map: "전체 노선도", rush: "출퇴근 운행", regular: "근무시간 운행" },
@@ -58,7 +58,9 @@ export default function BusInfo() {
               {MATCHING_ENABLED && (
                 <Link href="/points" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               )}
-              <Link href="/game" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              {GAME_ENABLED && (
+                <Link href="/game" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              )}
               <Link href="/notice" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_notice || '📢 공지사항'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">{t.menu_settings}</Link>
             </nav>

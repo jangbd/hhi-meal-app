@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import Link from 'next/link';
 import AdBanner from './AdBanner';
 import { dict } from './i18n';
-import { MATCHING_ENABLED } from './featureFlags';
+import { MATCHING_ENABLED, GAME_ENABLED } from './featureFlags';
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -175,7 +175,9 @@ export default function Home() {
               {MATCHING_ENABLED && (
                 <Link href="/points" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_points || '💎 HD핵심가치 포인트 매칭소'}</Link>
               )}
-              <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              {GAME_ENABLED && (
+                <Link href="/game" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_game || '⚔️ 강화의 신'}</Link>
+              )}
               <Link href="/notice" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_notice || '📢 공지사항'}</Link>
               <Link href="/settings" className="block py-3.5 px-4 text-slate-600 font-bold rounded-xl">{t.menu_settings}</Link>
             </nav>
