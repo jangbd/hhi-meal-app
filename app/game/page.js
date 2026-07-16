@@ -6,19 +6,20 @@ import { createClient } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { AdMob, RewardAdPluginEvents, InterstitialAdPluginEvents } from '@capacitor-community/admob';
 import { gameDict } from './gameI18n';
-import { GAME_ENABLED } from '../featureFlags';
+import { GAME_ENABLED, USE_TEST_ADS, TEST_AD_IDS } from '../featureFlags';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 💡 AdMob 광고 단위 ID (플랫폼별로 다른 ID 사용).
-const ADMOB_INTERSTITIAL_ID = Capacitor.getPlatform() === 'ios'
-  ? 'ca-app-pub-1252871302557543/8934078041'
-  : 'ca-app-pub-1252871302557543/1091675641';
-const ADMOB_REWARD_ID = Capacitor.getPlatform() === 'ios'
-  ? 'ca-app-pub-1252871302557543/2669454967'
-  : 'ca-app-pub-1252871302557543/4303594127';
+// 💡 AdMob 광고 단위 ID (플랫폼별로 다른 ID 사용, 테스트 기간엔 테스트 광고로 대체).
+const GAME_AD_PLATFORM = Capacitor.getPlatform() === 'ios' ? 'ios' : 'android';
+const ADMOB_INTERSTITIAL_ID = USE_TEST_ADS
+  ? TEST_AD_IDS.interstitial[GAME_AD_PLATFORM]
+  : (GAME_AD_PLATFORM === 'ios' ? 'ca-app-pub-1252871302557543/8934078041' : 'ca-app-pub-1252871302557543/1091675641');
+const ADMOB_REWARD_ID = USE_TEST_ADS
+  ? TEST_AD_IDS.rewarded[GAME_AD_PLATFORM]
+  : (GAME_AD_PLATFORM === 'ios' ? 'ca-app-pub-1252871302557543/2669454967' : 'ca-app-pub-1252871302557543/4303594127');
 // 💡 실제(운영) 광고 단위 ID를 사용 중이므로, 개발/테스트 기기에서는 반드시 등록해야
 // 실수로 실제 광고를 시청/클릭해 정책 위반이 되는 것을 막을 수 있음.
 const ADMOB_TESTING_DEVICES = ['447edb99-09f5-4d08-9438-0eeec804ca41'];
