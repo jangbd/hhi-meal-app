@@ -5,7 +5,7 @@ export const GAME_ENABLED = false;
 
 // 💡 비공개 테스트 기간 동안 실제 광고 대신 Google 공식 테스트 광고 단위를 쓰기 위한 플래그.
 // 테스트가 끝나고 정식 출시할 때 false로 되돌리면 됨.
-export const USE_TEST_ADS = true;
+export const USE_TEST_ADS = false;
 
 // Google이 공식 제공하는 항상 안전한 테스트 광고 단위 ID (플랫폼별)
 export const TEST_AD_IDS = {
