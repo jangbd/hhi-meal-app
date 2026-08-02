@@ -5,6 +5,14 @@ import Link from 'next/link';
 import AdBanner from './AdBanner';
 import { dict } from './i18n';
 import { MATCHING_ENABLED, GAME_ENABLED } from './featureFlags';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+// 💡 식사 태깅용 사내 앱(HD현대 식수시스템) 실행 버튼에 사용.
+// 안드로이드는 패키지명만으로 네이티브 플러그인을 통해 바로 실행 가능하지만,
+// iOS는 그 앱이 URL 스킴을 등록해두지 않아 자동 실행이 불가능해서 스토어로만 안내한다.
+const LaunchApp = registerPlugin('LaunchApp');
+const HHI_TAGGING_ANDROID_PACKAGE = 'com.hhi.android';
+const HHI_TAGGING_IOS_APPSTORE_URL = 'https://apps.apple.com/kr/app/id6448780318';
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -53,6 +61,21 @@ export default function Home() {
   }, []);
 
   const t = dict[lang] || dict.ko;
+
+  const handleLaunchTaggingApp = async () => {
+    const platform = Capacitor.getPlatform();
+    if (platform === 'android') {
+      try {
+        await LaunchApp.launch({ packageName: HHI_TAGGING_ANDROID_PACKAGE });
+      } catch {
+        window.open(`https://play.google.com/store/apps/details?id=${HHI_TAGGING_ANDROID_PACKAGE}`, '_blank');
+      }
+    } else if (platform === 'ios') {
+      window.open(HHI_TAGGING_IOS_APPSTORE_URL, '_blank');
+    } else {
+      window.open(`https://play.google.com/store/apps/details?id=${HHI_TAGGING_ANDROID_PACKAGE}`, '_blank');
+    }
+  };
 
   const pad = (n) => n < 10 ? '0' + n : n;
   const now = new Date();
@@ -158,7 +181,10 @@ export default function Home() {
         <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 border border-indigo-800">
           📍 {getResName(selectedRestaurant)} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
         </button>
-        <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl ml-auto">☰</button>
+        <button onClick={handleLaunchTaggingApp} className="text-xs font-bold bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-500 ml-auto mr-2">
+          🍽️ 식사 태깅
+        </button>
+        <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
       </header>
 
       {isMenuOpen && (
