@@ -65,10 +65,10 @@ export default function Home() {
   const handleLaunchTaggingApp = () => {
     const platform = Capacitor.getPlatform();
     if (platform === 'android') {
-      // 💡 순수 웹 방식(intent:// URL)으로 패키지명만으로 앱 실행 시도.
-      // Capacitor WebView가 자체 콘텐츠가 아닌 URL은 시스템(OS)에 그대로 넘겨서
-      // 처리하기 때문에, 네이티브 플러그인 없이도 이 방식으로 앱을 실행할 수 있다.
-      window.location.href = `intent://#Intent;package=${HHI_TAGGING_ANDROID_PACKAGE};end`;
+      // 💡 순수 웹 방식(intent: URL)으로 패키지명만으로 앱 실행 시도.
+      // scheme이 없는 intent 링크이므로 "intent://"가 아니라 "intent:"(슬래시 없이) +
+      // action/category를 명시해야 시스템이 대상 앱의 런처 액티비티를 찾아 실행한다.
+      window.location.href = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${HHI_TAGGING_ANDROID_PACKAGE};end`;
     } else if (platform === 'ios') {
       window.open(HHI_TAGGING_IOS_APPSTORE_URL, '_blank');
     } else {
