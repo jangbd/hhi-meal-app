@@ -177,14 +177,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
-      <header className="sticky top-0 z-30 bg-indigo-950 text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 border border-indigo-800">
-          📍 {getResName(selectedRestaurant)} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
-        </button>
-        <button onClick={handleLaunchTaggingApp} className="text-xs font-bold bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-500 ml-auto mr-2">
-          🍽️ 식사 태깅
-        </button>
-        <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+      <header className="sticky top-0 z-30 bg-indigo-950 text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 border border-indigo-800">
+            📍 {getResName(selectedRestaurant)} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
+          </button>
+          <button onClick={handleLaunchTaggingApp} className="text-xs font-bold bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-500 ml-auto mr-2">
+            🍽️ 식사 태깅
+          </button>
+          <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+        </div>
       </header>
 
       {isMenuOpen && (

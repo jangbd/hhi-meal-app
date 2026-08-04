@@ -31,10 +31,12 @@ export default function Notice() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col max-w-md mx-auto">
-      <header className="sticky top-0 z-30 bg-indigo-950 text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <button onClick={() => window.location.href = '/'} className="text-xl p-2">←</button>
-        <h1 className="text-[16px] font-black">{t.menu_notice || '📢 공지사항'}</h1>
-        <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+      <header className="sticky top-0 z-30 bg-indigo-950 text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <button onClick={() => window.location.href = '/'} className="text-xl p-2">←</button>
+          <h1 className="text-[16px] font-black">{t.menu_notice || '📢 공지사항'}</h1>
+          <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+        </div>
       </header>
 
       {isMenuOpen && (

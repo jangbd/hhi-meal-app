@@ -21,9 +21,11 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans">
-      <header className="sticky top-0 z-30 bg-slate-900 text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <h1 className="font-black">🔧 관리자 페이지</h1>
-        <button onClick={handleLogout} className="text-[12px] bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-full font-bold">로그아웃</button>
+      <header className="sticky top-0 z-30 bg-slate-900 text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <h1 className="font-black">🔧 관리자 페이지</h1>
+          <button onClick={handleLogout} className="text-[12px] bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-full font-bold">로그아웃</button>
+        </div>
       </header>
 
       <nav className="flex bg-white border-b border-slate-200 overflow-x-auto">

@@ -38,10 +38,12 @@ export default function BusInfo() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto relative flex flex-col">
       
-      <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
-        <h1 className="text-[15px] font-black tracking-tight">{bt.title}</h1>
-        <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+      <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
+          <h1 className="text-[15px] font-black tracking-tight">{bt.title}</h1>
+          <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+        </div>
       </header>
 
       {isMenuOpen && (

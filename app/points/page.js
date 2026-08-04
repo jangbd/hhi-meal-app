@@ -388,16 +388,18 @@ export default function MatchingHub() {
       )}
 
       {/* 💡 헤더는 무조건 sticky top-0 으로 상단 고정 */}
-      <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white px-4 h-14 flex items-center justify-between shadow-md">
-        <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
-        <h1 className="text-[15px] font-black tracking-tight">{t.menu_points || 'HD핵심가치 포인트 매칭소'}</h1>
-        <div className="flex items-center">
-          {myProfile && !isEditing && (
-            <button onClick={handleRefreshStatus} className="mr-2 text-[12px] bg-indigo-500/30 px-2 py-1 rounded-full font-bold hover:bg-indigo-500/50 transition-colors">
-              {isSyncing ? '동기화중' : '🔄 새로고침'}
-            </button>
-          )}
-          <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+      <header className="sticky top-0 z-30 bg-[#1a1a3c] text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="px-4 h-14 flex items-center justify-between">
+          <button onClick={() => window.location.href='/'} className="p-2 -ml-2 text-xl hover:text-indigo-300">←</button>
+          <h1 className="text-[15px] font-black tracking-tight">{t.menu_points || 'HD핵심가치 포인트 매칭소'}</h1>
+          <div className="flex items-center">
+            {myProfile && !isEditing && (
+              <button onClick={handleRefreshStatus} className="mr-2 text-[12px] bg-indigo-500/30 px-2 py-1 rounded-full font-bold hover:bg-indigo-500/50 transition-colors">
+                {isSyncing ? '동기화중' : '🔄 새로고침'}
+              </button>
+            )}
+            <button onClick={() => setIsMenuOpen(true)} className="p-2 text-xl">☰</button>
+          </div>
         </div>
       </header>
 
