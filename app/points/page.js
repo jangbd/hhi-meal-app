@@ -115,7 +115,8 @@ export default function MatchingHub() {
     const cleanup = () => { dismissedListener?.remove(); failedListener?.remove(); };
 
     // 💡 실제 광고가 전체화면으로 뜨므로 자체 "광고 로딩 중" 안내 화면은 띄우지 않음
-    AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES })
+    AdMob.requestTrackingAuthorization().catch(() => {})
+      .then(() => AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES }))
       .then(() => AdMob.prepareInterstitial({ adId: ADMOB_INTERSTITIAL_ID }))
       .then(async () => {
         dismissedListener = await AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => { cleanup(); resolve(); });

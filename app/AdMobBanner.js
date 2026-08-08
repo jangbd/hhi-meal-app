@@ -36,13 +36,20 @@ export default function AdMobBanner() {
       }
     }).catch(() => {});
 
-    AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES })
-      .then(() => AdMob.showBanner({
-        adId: ADMOB_BANNER_ID,
-        adSize: BannerAdSize.ADAPTIVE_BANNER,
-        position: BannerAdPosition.BOTTOM_CENTER,
-      }))
-      .catch(() => { bannerInitialized = false; });
+    // 💡 iOS는 광고 데이터를 요청하기 전에 반드시 App Tracking Transparency(ATT) 권한을
+    // 사용자에게 먼저 물어봐야 함 (Apple 심사 가이드라인 2.1 필수 요건). Android에서는
+    // 이 호출이 그냥 아무 동작 없이 통과됨.
+    AdMob.requestTrackingAuthorization()
+      .catch(() => {})
+      .finally(() => {
+        AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES })
+          .then(() => AdMob.showBanner({
+            adId: ADMOB_BANNER_ID,
+            adSize: BannerAdSize.ADAPTIVE_BANNER,
+            position: BannerAdPosition.BOTTOM_CENTER,
+          }))
+          .catch(() => { bannerInitialized = false; });
+      });
   }, []);
 
   return null;

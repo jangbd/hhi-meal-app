@@ -368,6 +368,9 @@ export default function GameLobby() {
     let rewardedListener, dismissedListener, failedListener;
 
     const setupAds = async () => {
+      // 💡 iOS ATT 권한 요청 (app/AdMobBanner.js와 동일 이유 — 광고 요청 전 필수).
+      // 이미 응답한 상태면 시스템이 즉시 결과를 반환하고 재요청 팝업은 뜨지 않음.
+      await AdMob.requestTrackingAuthorization().catch(() => {});
       await AdMob.initialize({ initializeForTesting: true, testingDevices: ADMOB_TESTING_DEVICES });
 
       rewardedListener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
