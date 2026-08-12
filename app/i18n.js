@@ -16,7 +16,7 @@ export const dict = {
     
     days: ["일", "월", "화", "수", "목", "금", "토"],
     set_title: "선호 설정", set_res: "식당", set_lang: "언어", set_save: "설정 및 언어 저장하기",
-    res_1: "현장 (현대그린푸드)", res_2: "숙소 (현대그린푸드)", res_3: "현장 (CJ프레시웨이)", res_4: "현장 (사이트솔루션HOC)",
+    res_field: "현장", res_1: "현장 (현대그린푸드)", res_2: "숙소 (현대그린푸드)", res_3: "현장 (CJ프레시웨이)", res_4: "현장 (사이트솔루션HOC)",
     feedback_title: "💡 건의사항 및 문제신고", feedback_placeholder: "불편한 점이나 요청사항을 적어주세요.", feedback_submit: "의견 보내기"
   },
   en: {
@@ -31,7 +31,7 @@ export const dict = {
     
     days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     set_title: "Settings", set_res: "Restaurant", set_lang: "Language", set_save: "Save Settings & Language",
-    res_1: "Site (Hyundai Green Food)", res_2: "Dorm (Hyundai Green Food)", res_3: "Site (CJ Freshway)", res_4: "Site (Site Solution HOC)",
+    res_field: "Site", res_1: "Site (Hyundai Green Food)", res_2: "Dorm (Hyundai Green Food)", res_3: "Site (CJ Freshway)", res_4: "Site (Site Solution HOC)",
     feedback_title: "💡 Feedback & Bug Report", feedback_placeholder: "Please let us know if you have any issues or suggestions.", feedback_submit: "Submit Feedback"
   },
   vi: {
@@ -46,7 +46,7 @@ export const dict = {
     
     days: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
     set_title: "Cài đặt", set_res: "Nhà hàng", set_lang: "Ngôn ngữ", set_save: "Lưu cài đặt và ngôn ngữ",
-    res_1: "Công trường (Nhà ăn Hyundai Green Food)", res_2: "Ký túc xá (Nhà ăn Hyundai Green Food)", res_3: "Công trường (Nhà ăn CJ Freshway)", res_4: "Công trường (Nhà ăn Site Solution HOC)",
+    res_field: "Công trường", res_1: "Công trường (Nhà ăn Hyundai Green Food)", res_2: "Ký túc xá (Nhà ăn Hyundai Green Food)", res_3: "Công trường (Nhà ăn CJ Freshway)", res_4: "Công trường (Nhà ăn Site Solution HOC)",
     feedback_title: "💡 Đóng góp ý kiến & Báo lỗi", feedback_placeholder: "Vui lòng nhập sự bất tiện hoặc yêu cầu của bạn.", feedback_submit: "Gửi ý kiến"
   },
   zh: {
@@ -61,7 +61,7 @@ export const dict = {
     
     days: ["日", "一", "二", "三", "四", "五", "六"],
     set_title: "设置", set_res: "餐厅", set_lang: "语言", set_save: "保存设置和语言",
-    res_1: "现场 (现代绿食)", res_2: "宿舍 (现代绿食)", res_3: "现场 (希杰 Freshway)", res_4: "现场 (Site Solution HOC)",
+    res_field: "现场", res_1: "现场 (现代绿食)", res_2: "宿舍 (现代绿食)", res_3: "现场 (希杰 Freshway)", res_4: "现场 (Site Solution HOC)",
     feedback_title: "💡 意见建议与问题报告", feedback_placeholder: "请填写您的不便之处或要求。", feedback_submit: "提交意见"
   },
   uz: {
@@ -76,7 +76,7 @@ export const dict = {
     
     days: ["Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan"],
     set_title: "Sozlamalar", set_res: "Oshxona", set_lang: "Til", set_save: "Sozlamalar va tilni saqlash",
-    res_1: "Obyekt (Xyunde Grin Fud)", res_2: "Yotoqxona (Xyunde Grin Fud)", res_3: "Obyekt (Si-Djey Freshvey)", res_4: "Obyekt (Sayt Solyushn HOC)",
+    res_field: "Obyekt", res_1: "Obyekt (Xyunde Grin Fud)", res_2: "Yotoqxona (Xyunde Grin Fud)", res_3: "Obyekt (Si-Djey Freshvey)", res_4: "Obyekt (Sayt Solyushn HOC)",
     feedback_title: "💡 Fikr-mulohaza va xatoliklar", feedback_placeholder: "Iltimos, muammo yoki takliflaringizni yozib qoldiring.", feedback_submit: "Yuborish"
   },
   si: {
@@ -91,7 +91,7 @@ export const dict = {
     
     days: ["ඉරිදා", "සඳුදා", "අඟහ", "බදාදා", "බ්‍රහස්", "සිකු", "සෙන"],
     set_title: "සැකසුම්", set_res: "ආපනශාලාව", set_lang: "භාෂාව", set_save: "සැකසුම් සහ භාෂාව සුරකින්න",
-    res_1: "සේවා ස්ථානය (හයුන්ඩායි ග්‍රීන් ෆුඩ්)", res_2: "නේවාසිකාගාරය (හයුන්ඩායි ග්‍රීන් ෆුඩ්)", res_3: "සේවා ස්ථානය (සීජේ ෆ්‍රෙෂ්වේ)", res_4: "සේවා ස්ථානය (සයිට් සොලියුෂන් HOC)",
+    res_field: "සේවා ස්ථානය", res_1: "සේවා ස්ථානය (හයුන්ඩායි ග්‍රීන් ෆුඩ්)", res_2: "නේවාසිකාගාරය (හයුන්ඩායි ග්‍රීන් ෆුඩ්)", res_3: "සේවා ස්ථානය (සීජේ ෆ්‍රෙෂ්වේ)", res_4: "සේවා ස්ථානය (සයිට් සොලියුෂන් HOC)",
     feedback_title: "💡 ප්‍රතිපෝෂණ සහ දෝෂ වාර්තාව", feedback_placeholder: "කරුණාකර ඔබගේ ගැටළු හෝ යෝජනා මෙහි ඇතුලත් කරන්න.", feedback_submit: "යවන්න"
   },
   id: {
@@ -106,7 +106,7 @@ export const dict = {
     
     days: ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"],
     set_title: "Pengaturan", set_res: "Restoran", set_lang: "Bahasa", set_save: "Simpan Pengaturan & Bahasa",
-    res_1: "Situs (Restoran Hyundai Green Food)", res_2: "Asrama (Restoran Hyundai Green Food)", res_3: "Situs (Restoran CJ Freshway)", res_4: "Situs (Restoran Site Solution HOC)",
+    res_field: "Situs", res_1: "Situs (Restoran Hyundai Green Food)", res_2: "Asrama (Restoran Hyundai Green Food)", res_3: "Situs (Restoran CJ Freshway)", res_4: "Situs (Restoran Site Solution HOC)",
     feedback_title: "💡 Umpan Balik & Laporan Bug", feedback_placeholder: "Beri tahu kami jika Anda memiliki masalah atau saran.", feedback_submit: "Kirim Umpan Balik"
   },
   tl: {
@@ -121,7 +121,7 @@ export const dict = {
     
     days: ["Lin", "Lun", "Mar", "Miy", "Huw", "Biy", "Sab"],
     set_title: "Mga Setting", set_res: "Restawran", set_lang: "Wika", set_save: "I-save ang Mga Setting at Wika",
-    res_1: "Site (Kainan ng Hyundai Green Food)", res_2: "Dorm (Kainan ng Hyundai Green Food)", res_3: "Site (Kainan ng CJ Freshway)", res_4: "Site (Kainan ng Site Solution HOC)",
+    res_field: "Site", res_1: "Site (Kainan ng Hyundai Green Food)", res_2: "Dorm (Kainan ng Hyundai Green Food)", res_3: "Site (Kainan ng CJ Freshway)", res_4: "Site (Kainan ng Site Solution HOC)",
     feedback_title: "💡 Feedback at Report ng Bug", feedback_placeholder: "Mangyaring ipaalam sa amin kung mayroon kang anumang mga isyu o mungkahi.", feedback_submit: "Isumite ang Feedback"
   },
   ru: {
@@ -136,7 +136,7 @@ export const dict = {
     
     days: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"],
     set_title: "Настройки", set_res: "Ресторан", set_lang: "Язык", set_save: "Сохранить настройки и язык",
-    res_1: "Объект (Хёндэ Грин Фуд)", res_2: "Общежитие (Хёндэ Грин Фуд)", res_3: "Объект (Си Джей Фрешвей)", res_4: "Объект (Сайт Солюшн HOC)",
+    res_field: "Объект", res_1: "Объект (Хёндэ Грин Фуд)", res_2: "Общежитие (Хёндэ Грин Фуд)", res_3: "Объект (Си Джей Фрешвей)", res_4: "Объект (Сайт Солюшн HOC)",
     feedback_title: "💡 Отзывы и сообщения об ошибках", feedback_placeholder: "Пожалуйста, сообщите нам, если у вас есть какие-либо проблемы или предложения.", feedback_submit: "Отправить отзыв"
   },
   th: {
@@ -151,7 +151,7 @@ export const dict = {
     
     days: ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"],
     set_title: "ตั้งค่า", set_res: "ร้านอาหาร", set_lang: "ภาษา", set_save: "บันทึกการตั้งค่าและภาษา",
-    res_1: "ไซต์งาน (ฮุนได กรีนฟู้ด)", res_2: "หอพัก (ฮุนได กรีนฟู้ด)", res_3: "ไซต์งาน (ซีเจ เฟรชเวย์)", res_4: "ไซต์งาน (ไซต์ โซลูชัน HOC)",
+    res_field: "ไซต์งาน", res_1: "ไซต์งาน (ฮุนได กรีนฟู้ด)", res_2: "หอพัก (ฮุนได กรีนฟู้ด)", res_3: "ไซต์งาน (ซีเจ เฟรชเวย์)", res_4: "ไซต์งาน (ไซต์ โซลูชัน HOC)",
     feedback_title: "💡 ข้อเสนอแนะและรายงานข้อผิดพลาด", feedback_placeholder: "โปรดแจ้งให้เราทราบหากคุณมีปัญหาหรือข้อเสนอแนะ", feedback_submit: "ส่งข้อเสนอแนะ"
   }
 };

@@ -87,6 +87,12 @@ export default function Home() {
     return res;
   };
 
+  // 💡 '현장'을 선택하면 현대그린푸드+CJ프레시웨이 두 식당 메뉴를 한 화면에서
+  // 같이 비교하며 볼 수 있게 한다 (숙소는 기존처럼 단독으로만 표시).
+  const SITE_RESTAURANTS = ['현장(현대그린푸드)', '현장(CJ프레시웨이)'];
+  const restaurantsToShow = selectedRestaurant === '숙소(현대그린푸드)' ? ['숙소(현대그린푸드)'] : SITE_RESTAURANTS;
+  const headerRestaurantLabel = selectedRestaurant === '숙소(현대그린푸드)' ? (t.res_2 || selectedRestaurant) : (t.res_field || '현장');
+
   const getMealTranslation = (mealType) => {
     if (mealType === '조식') return t.b;
     if (mealType === '중식') return t.l;
@@ -120,7 +126,7 @@ export default function Home() {
     else { targetDateStr = tomorrowStr; allowedTypesToday = ['조식', '중식', '석식', '야식']; }
 
     const filtered = meals.filter(m => {
-      if (m.restaurant !== selectedRestaurant) return false;
+      if (!restaurantsToShow.includes(m.restaurant)) return false;
       if (m.meal_date < targetDateStr) return false;
       if (m.meal_date === targetDateStr && !allowedTypesToday.includes(m.meal_type)) return false;
       return true;
@@ -137,10 +143,12 @@ export default function Home() {
 
   const { sorted: sortedMeals, targetDateStr } = getSortedMeals();
   
+  // 날짜 → 식당 → 식사구분 순으로 묶어서, 한 화면에서 식당별로 위아래 구분해 보여준다.
   const groupedMeals = sortedMeals.reduce((acc, meal) => {
     if (!acc[meal.meal_date]) acc[meal.meal_date] = {};
-    if (!acc[meal.meal_date][meal.meal_type]) acc[meal.meal_date][meal.meal_type] = [];
-    acc[meal.meal_date][meal.meal_type].push(meal);
+    if (!acc[meal.meal_date][meal.restaurant]) acc[meal.meal_date][meal.restaurant] = {};
+    if (!acc[meal.meal_date][meal.restaurant][meal.meal_type]) acc[meal.meal_date][meal.restaurant][meal.meal_type] = [];
+    acc[meal.meal_date][meal.restaurant][meal.meal_type].push(meal);
     return acc;
   }, {});
 
@@ -174,7 +182,7 @@ export default function Home() {
       <header className="sticky top-0 z-30 bg-indigo-950 text-white shadow-md" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 h-14 flex items-center justify-between">
           <button onClick={() => (window.location.href = '/settings')} className="text-xs font-bold bg-indigo-900 px-3 py-1.5 rounded-full hover:bg-indigo-800 border border-indigo-800">
-            📍 {getResName(selectedRestaurant)} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
+            📍 {headerRestaurantLabel} <span className="text-[10px] text-indigo-300 ml-0.5">▼</span>
           </button>
           {showTaggingButton && (
             <button onClick={handleLaunchTaggingApp} className="text-xs font-bold bg-orange-600 px-3 py-1.5 rounded-full hover:bg-orange-500 ml-auto mr-2">
@@ -224,7 +232,7 @@ export default function Home() {
             </div>
           </Link>
         )}
-        {Object.entries(groupedMeals).map(([date, types]) => (
+        {Object.entries(groupedMeals).map(([date, byRestaurant]) => (
           <div key={date} className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200">
             <div className="flex flex-col items-center mb-3">
               {date === todayStr && (
@@ -235,22 +243,30 @@ export default function Home() {
               </h2>
             </div>
 
-            {['조식', '중식', '석식', '야식'].map(type => types[type] && (
-              <div key={type} className="mt-5 first:mt-1">
-                <div className="flex justify-center items-center gap-1.5 mb-4 bg-slate-50 py-2.5 rounded-xl border border-slate-100">
-                  <span className="text-xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
-                  <h3 className="font-black text-indigo-950 text-[22px]">{getMealTranslation(type)}</h3>
-                </div>
-                
-                {sortCategories(types[type]).map(m => (
-                  <div key={m.id} className="text-center mb-5 last:mb-1">
-                    <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+            {restaurantsToShow.filter(res => byRestaurant[res]).map((res, resIdx) => (
+              <div key={res} className={resIdx > 0 ? 'mt-6 pt-5 border-t-2 border-dashed border-slate-200' : ''}>
+                {restaurantsToShow.filter(r => byRestaurant[r]).length > 1 && (
+                  <p className="text-center text-[13px] font-black text-indigo-500 mb-3">📍 {getResName(res)}</p>
+                )}
 
-                    <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
-                      {(getMenuByLang(m) || '').split('·').map((item, idx) => (
-                        <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
-                      ))}
+                {['조식', '중식', '석식', '야식'].map(type => byRestaurant[res][type] && (
+                  <div key={type} className="mt-5 first:mt-1">
+                    <div className="flex justify-center items-center gap-1.5 mb-4 bg-slate-50 py-2.5 rounded-xl border border-slate-100">
+                      <span className="text-xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
+                      <h3 className="font-black text-indigo-950 text-[22px]">{getMealTranslation(type)}</h3>
                     </div>
+
+                    {sortCategories(byRestaurant[res][type]).map(m => (
+                      <div key={m.id} className="text-center mb-5 last:mb-1">
+                        <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+
+                        <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
+                          {(getMenuByLang(m) || '').split('·').map((item, idx) => (
+                            <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

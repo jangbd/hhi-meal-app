@@ -50,10 +50,11 @@ export default function Settings() {
   };
 
   // 💡 절대 안 깨지는 100% 매칭 데이터 배열 생성
+  // '현장' 선택 시 홈 화면에서 현대그린푸드+CJ프레시웨이 메뉴를 같이 보여주므로
+  // 여기서는 별도로 나눠 고를 필요 없이 '현장'/'숙소' 두 가지로만 단순화.
   const restaurants = [
-    { id: '현장(현대그린푸드)', label: t.res_1 },
+    { id: '현장(현대그린푸드)', label: t.res_field || t.res_1 },
     { id: '숙소(현대그린푸드)', label: t.res_2 },
-    { id: '현장(CJ프레시웨이)', label: t.res_3 },
   ];
 
   return (
