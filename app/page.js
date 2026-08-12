@@ -243,34 +243,40 @@ export default function Home() {
               </h2>
             </div>
 
-            {restaurantsToShow.filter(res => byRestaurant[res]).map((res, resIdx) => (
-              <div key={res} className={resIdx > 0 ? 'mt-6 pt-5 border-t-2 border-dashed border-slate-200' : ''}>
-                {restaurantsToShow.filter(r => byRestaurant[r]).length > 1 && (
-                  <p className="text-center text-[13px] font-black text-indigo-500 mb-3">📍 {getResName(res)}</p>
-                )}
-
-                {['조식', '중식', '석식', '야식'].map(type => byRestaurant[res][type] && (
-                  <div key={type} className="mt-5 first:mt-1">
+            {(() => {
+              const resWithData = restaurantsToShow.filter(res => byRestaurant[res]);
+              const multiRestaurant = resWithData.length > 1;
+              return ['조식', '중식', '석식', '야식']
+                .filter(type => resWithData.some(res => byRestaurant[res][type]))
+                .map((type, typeIdx) => (
+                  <div key={type} className={typeIdx > 0 ? 'mt-6 pt-5 border-t-2 border-dashed border-slate-200' : 'mt-1'}>
                     <div className="flex justify-center items-center gap-1.5 mb-4 bg-slate-50 py-2.5 rounded-xl border border-slate-100">
                       <span className="text-xl">{type === '조식' ? '🌅' : type === '중식' ? '☀️' : type === '석식' ? '🌙' : '🌃'}</span>
                       <h3 className="font-black text-indigo-950 text-[22px]">{getMealTranslation(type)}</h3>
                     </div>
 
-                    {sortCategories(byRestaurant[res][type]).map(m => (
-                      <div key={m.id} className="text-center mb-5 last:mb-1">
-                        <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+                    {resWithData.filter(res => byRestaurant[res][type]).map((res, resIdx) => (
+                      <div key={res} className={resIdx > 0 ? 'mt-4 pt-4 border-t border-slate-100' : ''}>
+                        {multiRestaurant && (
+                          <p className="text-center text-[13px] font-black text-indigo-500 mb-2">📍 {getResName(res)}</p>
+                        )}
 
-                        <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
-                          {(getMenuByLang(m) || '').split('·').map((item, idx) => (
-                            <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
-                          ))}
-                        </div>
+                        {sortCategories(byRestaurant[res][type]).map(m => (
+                          <div key={m.id} className="text-center mb-5 last:mb-1">
+                            <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
+
+                            <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
+                              {(getMenuByLang(m) || '').split('·').map((item, idx) => (
+                                <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
-                ))}
-              </div>
-            ))}
+                ));
+            })()}
           </div>
         ))}
       </main>
