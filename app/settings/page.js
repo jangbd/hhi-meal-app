@@ -54,7 +54,6 @@ export default function Settings() {
     { id: '현장(현대그린푸드)', label: t.res_1 },
     { id: '숙소(현대그린푸드)', label: t.res_2 },
     { id: '현장(CJ프레시웨이)', label: t.res_3 },
-    { id: '현장(사이트솔루션HOC)', label: t.res_4 }
   ];
 
   return (
