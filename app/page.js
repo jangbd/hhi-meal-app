@@ -87,6 +87,13 @@ export default function Home() {
     return res;
   };
 
+  // 💡 두 식당 메뉴를 한 화면에서 볼 때 카테고리 줄마다 붙이는 짧은 식당 이름표
+  const getResShortName = (res) => {
+    if (res === '현장(현대그린푸드)') return t.res_short_1 || '현대';
+    if (res === '현장(CJ프레시웨이)') return t.res_short_3 || 'CJ';
+    return res;
+  };
+
   // 💡 '현장'을 선택하면 현대그린푸드+CJ프레시웨이 두 식당 메뉴를 한 화면에서
   // 같이 비교하며 볼 수 있게 한다 (숙소는 기존처럼 단독으로만 표시).
   const SITE_RESTAURANTS = ['현장(현대그린푸드)', '현장(CJ프레시웨이)'];
@@ -255,25 +262,32 @@ export default function Home() {
                       <h3 className="font-black text-indigo-950 text-[22px]">{getMealTranslation(type)}</h3>
                     </div>
 
-                    {resWithData.filter(res => byRestaurant[res][type]).map((res, resIdx) => (
-                      <div key={res} className={resIdx > 0 ? 'mt-4 pt-4 border-t border-slate-100' : ''}>
-                        {multiRestaurant && (
-                          <p className="text-center text-[13px] font-black text-indigo-500 mb-2">📍 {getResName(res)}</p>
-                        )}
+                    {(() => {
+                      // 카테고리(한식/분식...) 우선 정렬 후, 같은 카테고리 안에서는 식당 순서로 정렬
+                      // → "현대 한식 / CJ 한식 / 현대 분식 / CJ 분식" 순으로 나란히 비교되게 함
+                      const allMeals = resWithData
+                        .filter(res => byRestaurant[res][type])
+                        .flatMap(res => byRestaurant[res][type].map(m => ({ ...m, __res: res })));
+                      const sortedMeals = [...allMeals].sort((a, b) => {
+                        const posA = categoryOrder.indexOf(a.menu_category) === -1 ? 99 : categoryOrder.indexOf(a.menu_category);
+                        const posB = categoryOrder.indexOf(b.menu_category) === -1 ? 99 : categoryOrder.indexOf(b.menu_category);
+                        if (posA !== posB) return posA - posB;
+                        return resWithData.indexOf(a.__res) - resWithData.indexOf(b.__res);
+                      });
+                      return sortedMeals.map(m => (
+                        <div key={`${m.__res}-${m.id}`} className="text-center mb-5 last:mb-1">
+                          <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">
+                            {multiRestaurant && `${getResShortName(m.__res)} `}{getCategoryTranslation(m.menu_category)}
+                          </p>
 
-                        {sortCategories(byRestaurant[res][type]).map(m => (
-                          <div key={m.id} className="text-center mb-5 last:mb-1">
-                            <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">{getCategoryTranslation(m.menu_category)}</p>
-
-                            <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
-                              {(getMenuByLang(m) || '').split('·').map((item, idx) => (
-                                <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
-                              ))}
-                            </div>
+                          <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
+                            {(getMenuByLang(m) || '').split('·').map((item, idx) => (
+                              <p key={idx} className="block">{highlightMenuText(item.trim())}</p>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                        </div>
+                      ));
+                    })()}
                   </div>
                 ));
             })()}
