@@ -94,6 +94,12 @@ export default function Home() {
     return res;
   };
 
+  // 식당별 색상 구분 (현대: 파란색, CJ: 주황색)
+  const getResColorClass = (res) => {
+    if (res === '현장(CJ프레시웨이)') return 'text-orange-600';
+    return 'text-blue-600';
+  };
+
   // 💡 '현장'을 선택하면 현대그린푸드+CJ프레시웨이 두 식당 메뉴를 한 화면에서
   // 같이 비교하며 볼 수 있게 한다 (숙소는 기존처럼 단독으로만 표시).
   const SITE_RESTAURANTS = ['현장(현대그린푸드)', '현장(CJ프레시웨이)'];
@@ -277,7 +283,10 @@ export default function Home() {
                       return sortedMeals.map(m => (
                         <div key={`${m.__res}-${m.id}`} className="text-center mb-5 last:mb-1">
                           <p className="text-green-700 font-black text-[23px] mb-1.5 tracking-tighter">
-                            {multiRestaurant && `${getResShortName(m.__res)} `}{getCategoryTranslation(m.menu_category)}
+                            {multiRestaurant && (
+                              <span className={getResColorClass(m.__res)}>{getResShortName(m.__res)} </span>
+                            )}
+                            {getCategoryTranslation(m.menu_category)}
                           </p>
 
                           <div className="text-slate-800 space-y-1 text-[19px] font-bold leading-snug">
