@@ -165,7 +165,7 @@ export default function Home() {
     return acc;
   }, {});
 
-  const categoryOrder = ['한식', '간편식', '분식', '월드키친', '직화', '일반식', '기숙사식', '스낵픽', '힐링푸드'];
+  const categoryOrder = ['한식', '분식', '간편식', '월드키친', '직화', '일반식', '기숙사식', '스낵픽', '힐링푸드'];
 
   const sortCategories = (mealsArray) => {
     return [...mealsArray].sort((a, b) => {
