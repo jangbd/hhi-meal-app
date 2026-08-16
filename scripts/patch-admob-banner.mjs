@@ -68,16 +68,10 @@ if (content.includes('AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(c
   console.log('[patch-admob-banner] 패치 2/3 적용: 어댑티브 배너 폭 448dp 제한');
 }
 
-// 패치 3: Android 15+ Safe Area 인셋 마진 처리 제거 (배너가 시스템 내비게이션 바
-// 높이만큼 위로 밀려 올라가 화면 맨 아래와 배너 사이에 빈 공간이 생기는 원인이었음)
-if (content.includes('// set Safe Area only for Android 15+')) {
-  content = content.replace(
-    /            \/\/ set Safe Area only for Android 15\+\n            if \(Build\.VERSION\.SDK_INT >= Build\.VERSION_CODES\.VANILLA_ICE_CREAM\) \{\n(?:.*\n)*?            \}\n\n            mAdViewLayout\.setLayoutParams\(mAdViewLayoutParams\);/,
-    '            mAdViewLayout.setLayoutParams(mAdViewLayoutParams);'
-  );
-  appliedCount++;
-  console.log('[patch-admob-banner] 패치 3/3 적용: Safe Area 인셋 마진 제거');
-}
+// 💡 패치 3(Safe Area 인셋 마진 제거)은 되돌림 — 그 패치 때문에 배너가 시스템
+// 내비게이션 바 영역까지 파고 들어가 내비게이션 버튼과 겹쳐 보이는 문제가
+// 발생했음이 확인됨. 원본 플러그인의 인셋 마진 로직(배너를 내비게이션 바
+// 높이만큼 위로 띄워서 안 겹치게 하는 것)이 정상 동작이므로 그대로 둔다.
 
 if (appliedCount > 0) {
   fs.writeFileSync(targetPath, content, 'utf8');
